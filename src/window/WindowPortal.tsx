@@ -12,6 +12,17 @@ import { CssBaseline, ThemeProvider, type Theme } from '@mui/material'
  */
 export type WindowMode = 'dialog' | 'nativeDialog' | 'popover' | 'popup' | 'tab' | 'window' | 'pip'
 
+/**
+ * 環境に合った出し方。PWA（アドレスバーが出ない）で Chromium 系ならポップアップ、それ以外はダイアログ
+ * （ふつうのタブではポップアップに URL が出て見た目が悪く、Chromium 以外の PWA はポップアップを別のブラウザの窓で開くことがあるため）
+ */
+export function autoWindowMode(): WindowMode {
+  const pwa = window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: window-controls-overlay)').matches
+  const brands = (navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }).userAgentData?.brands ?? []
+  const chromium = brands.some((b) => b.brand === 'Chromium')
+  return pwa && chromium ? 'popup' : 'dialog'
+}
+
 type ExternalMode = Exclude<WindowMode, 'dialog' | 'nativeDialog' | 'popover'>
 const isExternal = (m: WindowMode): m is ExternalMode => m === 'popup' || m === 'tab' || m === 'window' || m === 'pip'
 
