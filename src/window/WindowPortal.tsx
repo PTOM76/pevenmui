@@ -263,8 +263,19 @@ export function WindowPortal(p: Props) {
       doc.title = titleRef.current
       copyStyles(document, doc)
       // 配色は <html> のクラス（colorSchemeSelector: 'class'）で切り替わるので、元のページの属性を写し、変わったら追う
+      // 窓のタイトルバーの色は theme-color と color-scheme で決まるので、アプリの今の配色（body の背景）に合わせる
+      const themeMeta = doc.createElement('meta')
+      themeMeta.name = 'theme-color'
+      const schemeMeta = doc.createElement('meta')
+      schemeMeta.name = 'color-scheme'
+      doc.head.append(themeMeta, schemeMeta)
       const syncHtml = () => {
         for (const a of Array.from(document.documentElement.attributes)) doc.documentElement.setAttribute(a.name, a.value)
+        // クラスが変わった直後は CSS 変数がまだ反映されていないことがあるので、次のフレームで読む
+        requestAnimationFrame(() => {
+          themeMeta.content = getComputedStyle(document.body).backgroundColor
+          schemeMeta.content = getComputedStyle(document.documentElement).colorScheme || 'normal'
+        })
       }
       syncHtml()
       htmlObserver = new MutationObserver(syncHtml)
