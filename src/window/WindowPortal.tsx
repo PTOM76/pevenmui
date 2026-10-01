@@ -2,13 +2,18 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import createCache, { type EmotionCache } from '@emotion/cache'
 import { CacheProvider } from '@emotion/react'
-import { CssBaseline } from '@mui/material'
+import { CssBaseline, ThemeProvider, type Theme } from '@mui/material'
 
 /**
- * 画面の出し方。dialog はページ内のダイアログ、popup は window.open のポップアップ、
- * window は Window Management API で位置を覚えるサブウィンドウ（別の画面にも置ける）、pip は Document Picture-in-Picture（常に手前）
+ * 画面の出し方。
+ * - ページ内: dialog（MUI のダイアログ）、nativeDialog（HTML の <dialog> をモーダルで）、popover（Popover API。モーダルにせず後ろも触れる）
+ * - 別の窓: popup（window.open のポップアップ）、tab（別タブ）、
+ *   window（Window Management API で位置を覚えるサブウィンドウ。別の画面にも置ける）、pip（Document Picture-in-Picture。常に手前）
  */
-export type WindowMode = 'dialog' | 'popup' | 'window' | 'pip'
+export type WindowMode = 'dialog' | 'nativeDialog' | 'popover' | 'popup' | 'tab' | 'window' | 'pip'
+
+type ExternalMode = Exclude<WindowMode, 'dialog' | 'nativeDialog' | 'popover'>
+const isExternal = (m: WindowMode): m is ExternalMode => m === 'popup' || m === 'tab' || m === 'window' || m === 'pip'
 
 interface Props {
   open: boolean
@@ -33,7 +38,66 @@ interface Placement {
 
 interface Opened {
   root: HTMLElement
-  cache: EmotionCache
+  /** 別の窓に出すときの Emotion のキャッシュ（ページ内なら null） */
+  cache: EmotionCache | null
+}
+
+/**
+ * メニュー・ツールチップなどを、中身と同じ場所（別の窓、<dialog> の最前面のレイヤー）に出させる。
+ * 既定では元のページの body に出て、別の窓では元のページに、<dialog> では後ろに隠れてしまう
+ */
+function withContainer(outer: Theme, root: HTMLElement): Theme {
+  const c = outer.components ?? {}
+  const put = <K extends 'MuiPopover' | 'MuiPopper' | 'MuiModal'>(k: K) => ({ ...c[k], defaultProps: { ...c[k]?.defaultProps, container: root } })
+  return { ...outer, components: { ...c, MuiPopover: put('MuiPopover'), MuiPopper: put('MuiPopper'), MuiModal: put('MuiModal') } }
+}
+
+/** ページ内の窓（<dialog>・popover）の見た目。中央に置き、MUI のダイアログに近い形にする */
+const IN_PAGE_CSS = `
+.pevenmui-window { padding: 0; border: none; border-radius: 4px; color: inherit; background: transparent;
+  width: min(720px, calc(100vw - 32px)); height: min(560px, calc(100vh - 32px)); box-shadow: 0 11px 15px -7px rgba(0,0,0,.2), 0 24px 38px 3px rgba(0,0,0,.14);
+  display: flex; flex-direction: column; overflow: hidden; margin: auto; inset: 0; position: fixed; }
+.pevenmui-window::backdrop { background: rgba(0,0,0,.5); }
+`
+
+function ensureInPageStyle() {
+  if (document.getElementById('pevenmui-window-style')) return
+  const s = document.createElement('style')
+  s.id = 'pevenmui-window-style'
+  s.textContent = IN_PAGE_CSS
+  document.head.appendChild(s)
+}
+
+/** ページ内の窓を作って開く。対応していなければ null */
+function openInPage(mode: 'nativeDialog' | 'popover', title: string, onClose: () => void): { root: HTMLElement; close: () => void } | null {
+  ensureInPageStyle()
+  if (mode === 'nativeDialog') {
+    if (typeof HTMLDialogElement === 'undefined') return null
+    const d = document.createElement('dialog')
+    d.className = 'pevenmui-window'
+    d.setAttribute('aria-label', title)
+    // Esc は閉じる処理をこちらで行う（ブラウザに閉じさせると React の状態とずれる）
+    d.addEventListener('cancel', (e) => {
+      e.preventDefault()
+      onClose()
+    })
+    // 背景（<dialog> 自身の外側の部分）を押したら閉じる
+    d.addEventListener('click', (e) => e.target === d && onClose())
+    document.body.appendChild(d)
+    d.showModal()
+    return { root: d, close: () => (d.close(), d.remove()) }
+  }
+  if (!('popover' in HTMLElement.prototype)) return null
+  const el = document.createElement('div')
+  el.className = 'pevenmui-window'
+  el.setAttribute('role', 'dialog')
+  el.setAttribute('aria-label', title)
+  // manual: 外を押しても閉じない（作業しながら開いておける）
+  el.popover = 'manual'
+  el.addEventListener('keydown', (e) => e.key === 'Escape' && !e.defaultPrevented && onClose())
+  document.body.appendChild(el)
+  el.showPopover()
+  return { root: el, close: () => (el.hidePopover(), el.remove()) }
 }
 
 // Document Picture-in-Picture は TypeScript の型にまだない
@@ -64,7 +128,9 @@ function savePlacement(name: string, p: Placement) {
 }
 
 /** 窓を開く。開けなければ null */
-async function openWindow(mode: Props['mode'], name: string, width: number, height: number): Promise<Window | null> {
+async function openWindow(mode: ExternalMode, name: string, width: number, height: number): Promise<Window | null> {
+  // 窓の大きさの指定が無いと、ブラウザは別タブで開く
+  if (mode === 'tab') return window.open('', name)
   const saved = loadPlacement(name)
   const w = saved?.w ?? width
   const h = saved?.h ?? height
@@ -123,7 +189,7 @@ function copyStyles(from: Document, to: Document) {
 }
 
 /**
- * 中身を別の窓（ポップアップ・サブウィンドウ・PiP）に出す。窓を閉じたら onClose、open が false になったら窓を閉じる。
+ * 中身を別の窓（ポップアップ・別タブ・サブウィンドウ・PiP）や、ページ内の <dialog>・popover に出す。窓を閉じたら onClose、open が false になったら窓を閉じる。
  * 窓を開けなければ fallback（ふつうはダイアログ）を出す
  */
 export function WindowPortal(p: Props) {
@@ -136,13 +202,27 @@ export function WindowPortal(p: Props) {
 
   useEffect(() => {
     if (!p.open) return
+    const mode = p.mode
+    setFailed(false)
+    if (!isExternal(mode)) {
+      const page = openInPage(mode, titleRef.current, () => onCloseRef.current())
+      if (!page) {
+        setFailed(true)
+        return
+      }
+      setOpened({ root: page.root, cache: null })
+      return () => {
+        page.close()
+        setOpened(null)
+      }
+    }
     let win: Window | null = null
     let disposed = false
     let htmlObserver: MutationObserver | null = null
-    setFailed(false)
     const remember = () => {
-      if (!win || win.closed) return
-      savePlacement(p.name, p.mode === 'pip'
+      // 別タブは窓の位置・大きさを持たない
+      if (!win || win.closed || mode === 'tab') return
+      savePlacement(p.name, mode === 'pip'
         ? { w: win.innerWidth, h: win.innerHeight }
         : { x: win.screenX, y: win.screenY, w: win.innerWidth, h: win.innerHeight })
     }
@@ -158,7 +238,7 @@ export function WindowPortal(p: Props) {
     // 元のページを閉じたら一緒に閉じる（PiP はブラウザが閉じる）
     const closeChild = () => win?.close()
 
-    openWindow(p.mode, p.name, p.width, p.height).then((w) => {
+    openWindow(mode, p.name, p.width, p.height).then((w) => {
       if (disposed) {
         w?.close()
         return
@@ -197,17 +277,22 @@ export function WindowPortal(p: Props) {
   }, [p.open, p.mode, p.name, p.width, p.height])
 
   useEffect(() => {
-    if (opened) opened.root.ownerDocument.title = p.title
+    if (opened?.cache) opened.root.ownerDocument.title = p.title
   }, [opened, p.title])
 
   if (!p.open) return null
   if (failed) return p.fallback
   if (!opened) return null
+  const content = <ThemeProvider theme={(outer: Theme) => withContainer(outer, opened.root)}>{p.children}</ThemeProvider>
   return createPortal(
-    <CacheProvider value={opened.cache}>
-      <CssBaseline />
-      {p.children}
-    </CacheProvider>,
+    opened.cache ? (
+      <CacheProvider value={opened.cache}>
+        <CssBaseline />
+        {content}
+      </CacheProvider>
+    ) : (
+      content
+    ),
     opened.root,
   )
 }
