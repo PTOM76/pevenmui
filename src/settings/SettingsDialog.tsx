@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Box,
   Button,
@@ -22,6 +22,7 @@ import { useLabels } from '../labels'
 import { NarrowContext } from './controls'
 import { matches, SearchContext } from './search'
 import { WindowPortal, type WindowMode } from '../window/WindowPortal'
+import { WindowModeContext } from '../window/WindowDialog'
 
 /** 設定の分類 */
 export interface SettingsCategory<C extends string> {
@@ -43,7 +44,7 @@ interface Props<S, C extends string> {
   initial?: C
   /** 分類ごとの中身。`set` で変えた値は `draft` に入る（PC は OK・適用で反映、スマホはすぐ反映） */
   pages: (draft: S, set: (patch: Partial<S>) => void) => Record<C, ReactNode>
-  /** PC での出し方（既定は dialog）。スマホは常に全画面のダイアログ */
+  /** PC での出し方（既定は WindowModeContext）。スマホは常に全画面のダイアログ */
   windowMode?: WindowMode
 }
 
@@ -61,6 +62,8 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
   const l = useLabels()
   const theme = useTheme()
   const narrow = useMediaQuery(theme.breakpoints.down('sm'))
+  const ctxMode = useContext(WindowModeContext)
+  const windowMode = p.windowMode ?? ctxMode
   const [category, setCategory] = useState<C>(p.initial ?? p.categories[0].id)
   // 設定の検索。一致する項目がある分類だけを一覧に出す
   const [query, setQuery] = useState('')
@@ -235,10 +238,10 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
       {body}
     </Dialog>
   )
-  if (!p.windowMode || p.windowMode === 'dialog') return dialog
+  if (windowMode === 'dialog') return dialog
   // 別の窓では題名は窓の枠に出るので、中身と下のボタンだけを並べる。開けなければダイアログで出す
   return (
-    <WindowPortal open={p.open} mode={p.windowMode} name="settings" title={p.title} width={720} height={560} onClose={p.onClose} fallback={dialog}>
+    <WindowPortal open={p.open} mode={windowMode} name="settings" title={p.title} width={720} height={560} onClose={p.onClose} fallback={dialog}>
       <Box onKeyDown={enterToSubmit(ok)} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
         {body}
       </Box>
