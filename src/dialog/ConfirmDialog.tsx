@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, Typography } from '@mui/material'
+import { useLabels } from '../labels'
 
 export interface ConfirmRequest {
   message: string
@@ -11,9 +12,10 @@ export interface ConfirmRequest {
 
 /**
  * 確認ダイアログ（ブラウザの confirm の代わり）。`confirm(...)` で開き、実行なら true を返す。
- * 返す `dialog` を画面のどこかに置く。`cancelLabel` はキャンセルボタンの文字（翻訳はアプリ側で行う）
+ * 返す `dialog` を画面のどこかに置く
  */
-export function useConfirm(cancelLabel: string) {
+export function useConfirm() {
+  const l = useLabels()
   const [req, setReq] = useState<ConfirmRequest | null>(null)
   const resolveRef = useRef<((ok: boolean) => void) | null>(null)
 
@@ -38,7 +40,7 @@ export function useConfirm(cancelLabel: string) {
       <DialogActions>
         {/* 誤って実行しないよう、最初はキャンセルにフォーカスを置く */}
         <Button size="small" autoFocus onClick={() => close(false)}>
-          {cancelLabel}
+          {l.cancel}
         </Button>
         <Button size="small" color={req?.danger ? 'error' : 'primary'} onClick={() => close(true)}>
           {req?.okLabel}
