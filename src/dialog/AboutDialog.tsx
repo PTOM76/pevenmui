@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material'
+import { Box, Button, DialogActions, DialogContent, Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material'
 import { useLabels } from '../labels'
+import { WindowDialog } from '../window/WindowDialog'
 
 /** 「このアプリについて」: アイコン・アプリ名と、バージョン・作者などの表 */
 export function AboutDialog(p: { open: boolean; onClose: () => void; icon: ReactNode; name: string; rows: [string, ReactNode][] }) {
   const l = useLabels()
   return (
-    <Dialog open={p.open} onClose={p.onClose} maxWidth="xs" fullWidth>
+    <WindowDialog open={p.open} onClose={p.onClose} windowTitle={p.name} name="about" width={444} height={440} dialogProps={{ maxWidth: 'xs', fullWidth: true }}>
       <DialogContent>
         <Stack spacing={2} sx={{ alignItems: 'center', pt: 1 }}>
           {p.icon}
@@ -28,15 +29,14 @@ export function AboutDialog(p: { open: boolean; onClose: () => void; icon: React
       <DialogActions>
         <Button onClick={p.onClose}>{l.close}</Button>
       </DialogActions>
-    </Dialog>
+    </WindowDialog>
   )
 }
 
 /** キーボード・マウス操作の一覧。`rows` は [キー, 説明] */
 export function ShortcutsDialog(p: { open: boolean; onClose: () => void; title: string; rows: [string, string][] }) {
   return (
-    <Dialog open={p.open} onClose={p.onClose}>
-      <DialogTitle>{p.title}</DialogTitle>
+    <WindowDialog open={p.open} onClose={p.onClose} title={p.title} name="shortcuts" width={600} height={560}>
       <DialogContent>
         <Table size="small">
           <TableBody>
@@ -49,6 +49,6 @@ export function ShortcutsDialog(p: { open: boolean; onClose: () => void; title: 
           </TableBody>
         </Table>
       </DialogContent>
-    </Dialog>
+    </WindowDialog>
   )
 }

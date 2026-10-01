@@ -11,6 +11,7 @@ export { SearchContext, matches, useHighlight, useHighlighter } from './settings
 export { PevenLabels, useLabels, jaLabels, enLabels, type Labels } from './labels'
 export { SettingsDialog, matchCategories, type SettingsCategory } from './settings/SettingsDialog'
 export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPortal'
+export { WindowDialog, WindowModeContext } from './window/WindowDialog'
 export { AboutDialog, ShortcutsDialog } from './dialog/AboutDialog'
 export { AppHeader, HeaderIcon, useMobileLayout } from './layout/AppHeader'
 export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'
