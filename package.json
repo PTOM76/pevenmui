@@ -7,6 +7,7 @@
   "license": "MIT",
   "exports": "./src/index.ts",
   "peerDependencies": {
+    "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",

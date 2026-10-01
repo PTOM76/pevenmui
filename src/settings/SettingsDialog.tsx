@@ -21,6 +21,7 @@ import { enterToSubmit } from '../dialog/enterToSubmit'
 import { useLabels } from '../labels'
 import { NarrowContext } from './controls'
 import { matches, SearchContext } from './search'
+import { WindowPortal, type WindowMode } from '../window/WindowPortal'
 
 /** 設定の分類 */
 export interface SettingsCategory<C extends string> {
@@ -42,6 +43,8 @@ interface Props<S, C extends string> {
   initial?: C
   /** 分類ごとの中身。`set` で変えた値は `draft` に入る（PC は OK・適用で反映、スマホはすぐ反映） */
   pages: (draft: S, set: (patch: Partial<S>) => void) => Record<C, ReactNode>
+  /** PC での出し方（既定は dialog）。スマホは常に全画面のダイアログ */
+  windowMode?: WindowMode
 }
 
 /** 検索語に一致する項目がある分類（分類名そのものの一致も含む）。検索語が空ならすべて */
@@ -174,17 +177,8 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
       </NarrowContext.Provider>
     )
 
-  return (
-    // PC ではカテゴリの一覧と項目を並べても窮屈にならない大きさにする
-    <Dialog
-      open={p.open}
-      onClose={p.onClose}
-      onKeyDown={enterToSubmit(ok)}
-      fullWidth
-      maxWidth={false}
-      slotProps={{ paper: { sx: { maxWidth: 720, height: 'min(600px, calc(100% - 64px))' } } }}
-    >
-      <DialogTitle sx={{ fontSize: 16, py: 1.5 }}>{p.title}</DialogTitle>
+  const body = (
+    <>
       <DialogContent dividers sx={{ display: 'flex', gap: 2, p: 0 }}>
         {/* ↑↓ で分類を切り替え、Home / End で最初・最後へ（右の項目へは Tab で移る） */}
         <Box sx={{ width: 180, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
@@ -225,6 +219,29 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
           {l.apply}
         </Button>
       </DialogActions>
+    </>
+  )
+  const dialog = (
+    // PC ではカテゴリの一覧と項目を並べても窮屈にならない大きさにする
+    <Dialog
+      open={p.open}
+      onClose={p.onClose}
+      onKeyDown={enterToSubmit(ok)}
+      fullWidth
+      maxWidth={false}
+      slotProps={{ paper: { sx: { maxWidth: 720, height: 'min(600px, calc(100% - 64px))' } } }}
+    >
+      <DialogTitle sx={{ fontSize: 16, py: 1.5 }}>{p.title}</DialogTitle>
+      {body}
     </Dialog>
+  )
+  if (!p.windowMode || p.windowMode === 'dialog') return dialog
+  // 別の窓では題名は窓の枠に出るので、中身と下のボタンだけを並べる。開けなければダイアログで出す
+  return (
+    <WindowPortal open={p.open} mode={p.windowMode} name="settings" title={p.title} width={720} height={560} onClose={p.onClose} fallback={dialog}>
+      <Box onKeyDown={enterToSubmit(ok)} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
+        {body}
+      </Box>
+    </WindowPortal>
   )
 }
