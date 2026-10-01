@@ -12,4 +12,4 @@ export { PevenLabels, useLabels, jaLabels, enLabels, type Labels } from './label
 export { SettingsDialog, matchCategories, type SettingsCategory } from './settings/SettingsDialog'
 export { AboutDialog, ShortcutsDialog } from './dialog/AboutDialog'
 export { AppHeader, HeaderIcon, useMobileLayout } from './layout/AppHeader'
-export { useFileDrop } from './hooks/useFileDrop'
+export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'

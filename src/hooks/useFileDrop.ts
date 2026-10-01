@@ -4,12 +4,12 @@ import { useEffect, useRef } from 'react'
 const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files')
 
 /**
- * ページ上のどこにファイルをドロップしても `onFile` を呼ぶ。
+ * ページ上のどこにファイルをドロップしても `onFiles` に全部を渡す。
  * 受け付けることは画面の案内ではなく、マウスカーソル（コピーの形）で示す
  */
-export function useFileDrop(onFile: (file: File) => void) {
-  const onFileRef = useRef(onFile)
-  onFileRef.current = onFile
+export function useFilesDrop(onFiles: (files: File[]) => void) {
+  const onFilesRef = useRef(onFiles)
+  onFilesRef.current = onFiles
 
   useEffect(() => {
     const over = (e: DragEvent) => {
@@ -20,8 +20,8 @@ export function useFileDrop(onFile: (file: File) => void) {
     const drop = (e: DragEvent) => {
       if (!hasFiles(e)) return
       e.preventDefault()
-      const file = e.dataTransfer?.files[0]
-      if (file) onFileRef.current(file)
+      const files = Array.from(e.dataTransfer?.files ?? [])
+      if (files.length) onFilesRef.current(files)
     }
     window.addEventListener('dragover', over)
     window.addEventListener('drop', drop)
@@ -30,4 +30,9 @@ export function useFileDrop(onFile: (file: File) => void) {
       window.removeEventListener('drop', drop)
     }
   }, [])
+}
+
+/** ページ上のどこにファイルをドロップしても、最初の1つを `onFile` に渡す */
+export function useFileDrop(onFile: (file: File) => void) {
+  useFilesDrop((files) => onFile(files[0]))
 }
