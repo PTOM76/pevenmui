@@ -35,6 +35,8 @@ interface Props {
   width: number
   height: number
   onClose: () => void
+  /** 変わるたびに、開いている別の窓を手前に出す（開いたまま、もう一度開こうとしたときに増やす） */
+  focusSignal?: number
   /** 窓を開けなかったとき（未対応・ブロック・権限なし）に代わりに出すもの */
   fallback: ReactNode
   children: ReactNode
@@ -301,6 +303,15 @@ export function WindowPortal(p: Props) {
   useEffect(() => {
     if (opened?.cache) opened.root.ownerDocument.title = p.title
   }, [opened, p.title])
+
+  // 開いたまま、もう一度開こうとしたとき（`focusSignal` が変わったとき）は、別の窓を手前に出す
+  // （ページ内のダイアログはもとから手前にある。PiP はブラウザによっては前に出ない）
+  useEffect(() => {
+    if (p.focusSignal === undefined || !opened?.cache) return
+    opened.root.ownerDocument.defaultView?.focus()
+    // focusSignal が変わったときだけ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.focusSignal])
 
   if (!p.open) return null
   if (failed) return p.fallback

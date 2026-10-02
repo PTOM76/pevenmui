@@ -46,6 +46,8 @@ interface Props<S, C extends string> {
   pages: (draft: S, set: (patch: Partial<S>) => void) => Record<C, ReactNode>
   /** PC での出し方（既定は WindowModeContext）。スマホは常に全画面のダイアログ */
   windowMode?: WindowMode
+  /** 変わるたびに、別の窓で開いている設定画面を手前に出す（開いたまま、もう一度開こうとしたとき） */
+  focusSignal?: number
 }
 
 /** 検索語に一致する項目がある分類（分類名そのものの一致も含む）。検索語が空ならすべて */
@@ -241,7 +243,7 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
   if (windowMode === 'dialog') return dialog
   // 別の窓では題名は窓の枠に出るので、中身と下のボタンだけを並べる。開けなければダイアログで出す
   return (
-    <WindowPortal open={p.open} mode={windowMode} name="settings" title={p.title} width={720} height={560} onClose={p.onClose} fallback={dialog}>
+    <WindowPortal open={p.open} mode={windowMode} name="settings" title={p.title} width={720} height={560} onClose={p.onClose} focusSignal={p.focusSignal} fallback={dialog}>
       <Box onKeyDown={enterToSubmit(ok)} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
         {body}
       </Box>

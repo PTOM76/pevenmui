@@ -20,6 +20,8 @@ interface Props {
   onKeyDown?: KeyboardEventHandler<HTMLElement>
   /** ページ内のダイアログのときの指定（maxWidth など） */
   dialogProps?: Partial<DialogProps>
+  /** 変わるたびに、別の窓で開いているこのダイアログを手前に出す（開いたまま、もう一度開こうとしたとき） */
+  focusSignal?: number
   /** 出し方。未指定なら WindowModeContext に従う */
   mode?: WindowMode
   /** DialogContent・DialogActions */
@@ -41,7 +43,7 @@ export function WindowDialog(p: Props) {
   )
   if (mode === 'dialog') return dialog
   return (
-    <WindowPortal open={p.open} mode={mode} name={p.name} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} onClose={() => p.onClose?.()} fallback={dialog}>
+    <WindowPortal open={p.open} mode={mode} name={p.name} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
       <Box
         onKeyDown={p.onKeyDown}
         sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}
