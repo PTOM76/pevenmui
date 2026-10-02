@@ -1,0 +1,20 @@
+{
+  "ok": "확인",
+  "cancel": "취소",
+  "apply": "적용",
+  "close": "닫기",
+  "back": "뒤로",
+  "menu": "메뉴",
+  "more": "더 보기",
+  "resetAll": "모두 기본값으로",
+  "search": "설정 검색",
+  "noResults": "일치하는 설정이 없습니다",
+  "version": "버전",
+  "updateAvailable": "새 버전이 있습니다",
+  "updateAvailableBuild": " ({from} → {to})",
+  "updateReload": "업데이트",
+  "updateCheck": "지금 확인",
+  "updateLatest": "최신 버전입니다",
+  "updateUnsupported": "이 환경에서는 확인할 수 없습니다",
+  "updateFailed": "확인에 실패했습니다 (네트워크 연결을 확인하세요)"
+}

@@ -1,0 +1,20 @@
+{
+  "ok": "OK",
+  "cancel": "Cancel",
+  "apply": "Apply",
+  "close": "Close",
+  "back": "Back",
+  "menu": "Menu",
+  "more": "More",
+  "resetAll": "Reset all to defaults",
+  "search": "Search settings",
+  "noResults": "No matching settings",
+  "version": "Version",
+  "updateAvailable": "A new version is available",
+  "updateAvailableBuild": " ({from} → {to})",
+  "updateReload": "Update",
+  "updateCheck": "Check now",
+  "updateLatest": "You are on the latest version",
+  "updateUnsupported": "Cannot check in this environment",
+  "updateFailed": "Check failed (please check your network connection)"
+}

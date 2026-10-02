@@ -1,0 +1,20 @@
+{
+  "ok": "確定",
+  "cancel": "取消",
+  "apply": "套用",
+  "close": "關閉",
+  "back": "返回",
+  "menu": "選單",
+  "more": "更多",
+  "resetAll": "全部恢復預設",
+  "search": "搜尋設定",
+  "noResults": "沒有符合的設定",
+  "version": "版本",
+  "updateAvailable": "有新版本",
+  "updateAvailableBuild": "（{from} → {to}）",
+  "updateReload": "更新",
+  "updateCheck": "立即檢查",
+  "updateLatest": "已是最新版本",
+  "updateUnsupported": "此環境無法檢查",
+  "updateFailed": "檢查失敗（請檢查網路連線）"
+}

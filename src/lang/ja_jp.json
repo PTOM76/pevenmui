@@ -1,0 +1,20 @@
+{
+  "ok": "OK",
+  "cancel": "キャンセル",
+  "apply": "適用",
+  "close": "閉じる",
+  "back": "戻る",
+  "menu": "メニュー",
+  "more": "ほかのボタン",
+  "resetAll": "すべて既定値に戻す",
+  "search": "設定を検索",
+  "noResults": "一致する設定がありません",
+  "version": "バージョン",
+  "updateAvailable": "新しいバージョンがあります",
+  "updateAvailableBuild": "（{from} → {to}）",
+  "updateReload": "更新",
+  "updateCheck": "今すぐ確認",
+  "updateLatest": "最新バージョンです",
+  "updateUnsupported": "この環境では確認できません",
+  "updateFailed": "確認に失敗しました（ネットワーク接続を確認してください）"
+}
