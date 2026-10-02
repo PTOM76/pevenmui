@@ -32,7 +32,7 @@ const isAccessKey = (group: MenuGroup, key: string) => !!group.accessKey && key.
  * - マウスが離れても閉じない。外側をクリックするか Esc で閉じる
  * - Alt / F10 でメニューバーに入り、← → で項目を移動、↓ / Enter で開く
  * - アクセスキー（`accessKey`）があれば「ファイル(F)」と表示する。メニューバーに入っているときはその英字で開く。
- *   アプリとしてインストールして開いているときは、Alt+英字でも直接開く
+ *   アプリとしてインストールして開いているときは、Alt+英字でも直接開く。英字の下線は、使えるときだけ付ける
  * MUI の Menu は画面全体を覆う透明な幕を出し、隣の項目へのマウス移動をふさぐため、幕のない Popper で作る
  */
 export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
@@ -44,6 +44,9 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
   const wrap = (i: number) => (i + menus.length) % menus.length
   const menusRef = useRef(menus)
   menusRef.current = menus
+  // アクセスキーの下線: Alt+英字で直接開けるとき（アプリとして開いているとき）はいつも、
+  // そうでなければメニューバーに入っている間だけ（Windows と同じく、使えるときに示す）
+  const underline = isStandalone() || focus !== null || open !== null
 
   // Alt（単独で押して離したとき）/ F10 でメニューバーに入る。Windows と同じく、もう一度押すと抜ける
   useEffect(() => {
@@ -155,11 +158,7 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
             }}
           >
             {m.label}
-            {m.accessKey && (
-              <span>
-                (<u>{m.accessKey}</u>)
-              </span>
-            )}
+            {m.accessKey && <span>({underline ? <u>{m.accessKey}</u> : m.accessKey})</span>}
           </ButtonBase>
         ))}
         <Popper
