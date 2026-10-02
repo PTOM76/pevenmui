@@ -104,7 +104,9 @@ function SubmenuItem({ entry, close, keyPrefix }: { entry: Extract<MenuEntry, { 
 
 /** サブメニューを開かず、中身を区切り線で囲んでその場に並べる（スマホの一覧用） */
 export function flattenEntries(entries: MenuEntry[]): MenuEntry[] {
-  return entries.flatMap((e): MenuEntry[] => ('submenu' in e ? [{ divider: true }, ...flattenEntries(e.submenu).map((s) => ('divider' in s || !e.disabled ? s : { ...s, disabled: true })), { divider: true }] : [e]))
+  const flat = entries.flatMap((e): MenuEntry[] => ('submenu' in e ? [{ divider: true }, ...flattenEntries(e.submenu).map((s) => ('divider' in s || !e.disabled ? s : { ...s, disabled: true })), { divider: true }] : [e]))
+  // 続く区切り線と、端の区切り線は除く
+  return flat.filter((e, i) => !('divider' in e) || (i > 0 && i < flat.length - 1 && !('divider' in flat[i - 1])))
 }
 
 /**
