@@ -53,9 +53,9 @@ export const createPevenTheme = (desktop: boolean, overrides: ThemeOptions = {})
       },
     },
     MuiButton: { defaultProps: { disableElevation: true } },
-    // Tab で移ったときに、どのボタンにフォーカスがあるかを枠で分かるようにする（マウスで押したときは出ない）
+    // キーボードのフォーカスは背景で示す（枠は PC だけ。desktopStyles）
     MuiButtonBase: {
-      styleOverrides: { root: ({ theme }) => ({ '&.Mui-focusVisible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 } }) },
+      styleOverrides: { root: ({ theme }) => ({ '&.Mui-focusVisible': { backgroundColor: theme.vars!.palette.action.focus } }) },
     },
     MuiCard: { defaultProps: { variant: 'outlined' } },
     MuiChip: { styleOverrides: { root: { borderRadius: 4 } } },
@@ -97,15 +97,20 @@ export const createPevenTheme = (desktop: boolean, overrides: ThemeOptions = {})
 /**
  * PC のときだけ当てる、デスクトップアプリらしい見た目。
  * 押したときの波紋（ripple）は Web・Android 由来の動きなので消し、アイコンボタンは角ばらせる。
- * 波紋が無いとキーボード操作の位置が分からなくなるため、フォーカス枠を代わりに出す
+ * 波紋の代わりにフォーカス枠を出す（Windows 11 と同じく文字色）
  */
 export const desktopStyles = {
   '.MuiTouchRipple-root': { display: 'none' },
   '.MuiIconButton-root': { borderRadius: 4 },
   '.MuiButton-root, .MuiButton-root:hover': { boxShadow: 'none' },
   '.MuiButtonBase-root.Mui-focusVisible': {
-    outline: '2px solid var(--mui-palette-primary-main)',
+    outline: '2px solid var(--mui-palette-text-primary)',
     outlineOffset: -2,
+    borderRadius: 4,
+  },
+  // メニュー・一覧・タブは枠を出さない
+  '.MuiMenuItem-root.Mui-focusVisible, .MuiListItemButton-root.Mui-focusVisible, .MuiTab-root.Mui-focusVisible, .peven-menubar-item.Mui-focusVisible': {
+    outline: 'none',
   },
 } as const
 

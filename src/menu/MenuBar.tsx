@@ -143,6 +143,7 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
             ref={(el) => {
               buttons.current[index] = el
             }}
+            className="peven-menubar-item"
             aria-haspopup="menu"
             aria-expanded={open === index}
             onClick={() => setOpen((o) => (o === index ? null : index))}
