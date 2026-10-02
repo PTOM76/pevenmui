@@ -42,9 +42,39 @@ export function setApplyUpdate(fn: () => void) {
   applyUpdate = fn
 }
 
-/** 待っている新しい版に入れ替えて読み込み直す（設定の「更新」から呼ぶ） */
-export function updateNow() {
-  applyUpdate?.()
+/** 入れ替えを待つ最長時間（ミリ秒）。過ぎたらそのまま読み込み直す */
+const SWAP_TIMEOUT_MS = 5000
+
+/** 入れ替え中の Service Worker が、インストールを終えるまで待つ */
+function installed(sw: ServiceWorker | null): Promise<ServiceWorker | null> {
+  if (!sw || sw.state !== 'installing') return Promise.resolve(sw)
+  return new Promise((resolve) => {
+    const done = () => sw.state !== 'installing' && (sw.removeEventListener('statechange', done), resolve(sw.state === 'redundant' ? null : sw))
+    sw.addEventListener('statechange', done)
+  })
+}
+
+/**
+ * 待っている新しい版に入れ替えて読み込み直す（設定の「更新」から呼ぶ）。
+ * 確認した直後はまだダウンロード中のことがあるので、インストールが終わるのを待ってから入れ替える
+ */
+export async function updateNow() {
+  const r = registration
+  const sw = r ? (r.waiting ?? (await installed(r.installing))) : null
+  if (!sw) {
+    // 入れ替えるものが無ければ、UpdatePrompt の方法に任せる（開発サーバーなど）
+    applyUpdate?.()
+    return
+  }
+  let reloaded = false
+  const reload = () => {
+    if (reloaded) return
+    reloaded = true
+    window.location.reload()
+  }
+  navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true })
+  setTimeout(reload, SWAP_TIMEOUT_MS)
+  sw.postMessage({ type: 'SKIP_WAITING' })
 }
 
 /** 確認の結果。found なら `build` に配信中の版（取れなければ null）を入れる */
@@ -60,6 +90,8 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     return { kind: 'failed' }
   }
   if (!registration.installing && !registration.waiting) return { kind: 'latest' }
+  // ダウンロード中なら終わるまで待つ（終わる前に「更新」を押しても入れ替えられないため）
+  if (!registration.waiting && !(await installed(registration.installing))) return { kind: 'failed' }
   // Service Worker が待っていても、配信中の版が今の版と同じなら最新（UpdatePrompt と同じ判定）
   const build = await fetchLatestBuild()
   return build === appBuild ? { kind: 'latest' } : { kind: 'found', build }

@@ -42,7 +42,7 @@ export function UpdateSection() {
           </Typography>
           {/* 新しい版があれば、ここからそのまま更新できる */}
           {result.kind === 'found' && (
-            <Button size="small" variant="contained" onClick={updateNow}>
+            <Button size="small" variant="contained" onClick={() => void updateNow()}>
               {l.updateReload}
             </Button>
           )}
