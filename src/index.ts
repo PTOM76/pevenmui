@@ -14,4 +14,5 @@ export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPo
 export { WindowDialog, WindowModeContext } from './window/WindowDialog'
 export { AboutDialog, ShortcutsDialog } from './dialog/AboutDialog'
 export { AppHeader, HeaderIcon, useMobileLayout } from './layout/AppHeader'
+export { OverflowRow } from './layout/OverflowRow'
 export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'
