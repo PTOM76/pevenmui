@@ -30,20 +30,28 @@ export function Group({ title, children }: { title: string; children: ReactNode 
   )
 }
 
-/** 左にラベル、右に入力欄の1行（スマホはラベルの下に入力欄） */
-export function Row({ label, children }: { label: string; children: ReactNode }) {
-  const hit = useHighlight(label)
+/** 左にラベル、右に入力欄の1行（スマホはラベルの下に入力欄）。`help` は入力欄の下に小さく出す補足 */
+export function Row({ label, help, children }: { label: string; help?: string; children: ReactNode }) {
+  const hit = useHighlight(label, help)
+  const helpText = (size: number) => help && <Typography className="selectable" sx={{ fontSize: size, color: 'text.secondary', mt: 0.5 }}>{help}</Typography>
   if (useContext(NarrowContext))
     return (
       <Box>
         <Typography sx={{ fontSize: 14, mb: 0.75, width: 'fit-content', ...hit }}>{label}</Typography>
         {children}
+        {helpText(12)}
       </Box>
     )
   return (
     <>
       <Typography sx={{ fontSize: 13, whiteSpace: 'nowrap', justifySelf: 'start', ...hit }}>{label}</Typography>
       <Box sx={{ minWidth: 0 }}>{children}</Box>
+      {/* 補足は入力欄の列の次の行に置く（同じマスに入れると行が高くなり、ラベルが入力欄とずれる） */}
+      {help && (
+        <Box sx={{ gridColumn: 2, mt: -1 }}>
+          {helpText(11)}
+        </Box>
+      )}
     </>
   )
 }
