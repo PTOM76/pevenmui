@@ -116,7 +116,8 @@ export function flattenEntries(entries: MenuEntry[]): MenuEntry[] {
 export function renderEntries(entries: MenuEntry[], close: () => void, keyPrefix = '') {
   return entries.map((e, i) =>
     'divider' in e ? (
-      <Divider key={`${keyPrefix}${i}`} />
+      // MUI は「項目の直後の区切り線」だけ上下に余白を足すため、サブメニューの隣では余白が消えて縮んでいた。どこでも同じ詰めた余白にする
+      <Divider key={`${keyPrefix}${i}`} sx={{ '&&': { my: 0.5 } }} />
     ) : 'submenu' in e ? (
       <SubmenuItem key={`${keyPrefix}${i}`} entry={e} close={close} keyPrefix={`${keyPrefix}${i}`} />
     ) : (
