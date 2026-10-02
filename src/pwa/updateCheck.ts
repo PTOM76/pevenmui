@@ -55,11 +55,12 @@ function installed(sw: ServiceWorker | null): Promise<ServiceWorker | null> {
 }
 
 /**
- * 待っている新しい版に入れ替えて読み込み直す（設定の「更新」から呼ぶ）。
- * 確認した直後はまだダウンロード中のことがあるので、インストールが終わるのを待ってから入れ替える
+ * 新しい版をダウンロードし、入れ替えて読み込み直す（設定の「更新」から呼ぶ）。
+ * まだ待っている版が無ければここで取りに行き、インストールが終わるのを待ってから入れ替える
  */
 export async function updateNow() {
   const r = registration
+  if (r && !r.waiting && !r.installing) await r.update().catch(() => {})
   const sw = r ? (r.waiting ?? (await installed(r.installing))) : null
   if (!sw) {
     // 入れ替えるものが無ければ、UpdatePrompt の方法に任せる（開発サーバーなど）
@@ -80,19 +81,11 @@ export async function updateNow() {
 /** 確認の結果。found なら `build` に配信中の版（取れなければ null）を入れる */
 export type UpdateCheckResult = { kind: 'found'; build: string | null } | { kind: 'latest' | 'unsupported' | 'failed' }
 
-/** 今すぐ新しい版を確認する */
+/** 今すぐ新しい版を確認する。配信中の版（version.json）と比べるだけで、ダウンロードは「更新」で行う */
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
-  // 開発サーバーや、Service Worker が使えないブラウザでは確認できない
+  // 開発サーバーや、Service Worker が使えないブラウザでは更新できない
   if (!registration) return { kind: 'unsupported' }
-  try {
-    await registration.update()
-  } catch {
-    return { kind: 'failed' }
-  }
-  if (!registration.installing && !registration.waiting) return { kind: 'latest' }
-  // ダウンロード中なら終わるまで待つ（終わる前に「更新」を押しても入れ替えられないため）
-  if (!registration.waiting && !(await installed(registration.installing))) return { kind: 'failed' }
-  // Service Worker が待っていても、配信中の版が今の版と同じなら最新（UpdatePrompt と同じ判定）
   const build = await fetchLatestBuild()
+  if (build === null) return { kind: 'failed' }
   return build === appBuild ? { kind: 'latest' } : { kind: 'found', build }
 }
