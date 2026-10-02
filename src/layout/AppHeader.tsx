@@ -5,7 +5,7 @@ import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { useLabels } from '../labels'
 import MenuBar from '../menu/MenuBar'
-import { renderEntries, type MenuGroup } from '../menu/MenuList'
+import { flattenEntries, renderEntries, type MenuGroup } from '../menu/MenuList'
 import { LANDSCAPE_PHONE } from '../theme'
 
 /** 上部のバーに置くアイコンボタン（無効時もツールチップを出すため span で包む）。PC では `small` にする */
@@ -45,7 +45,7 @@ function OverflowMenu({ menus }: { menus: MenuGroup[] }) {
           </ListSubheader>,
           // スマホではショートカット表記は出さない
           ...renderEntries(
-            m.entries.map((e) => ('divider' in e ? e : { ...e, shortcut: undefined })),
+            flattenEntries(m.entries).map((e) => ('divider' in e ? e : { ...e, shortcut: undefined })),
             close,
             `${m.label}-`,
           ),

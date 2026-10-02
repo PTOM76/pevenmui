@@ -103,6 +103,8 @@ export const desktopStyles = {
   '.MuiTouchRipple-root': { display: 'none' },
   '.MuiIconButton-root': { borderRadius: 4 },
   '.MuiButton-root, .MuiButton-root:hover': { boxShadow: 'none' },
+  // メニューの1行を詰める（マウスなので指の大きさはいらない）
+  '.MuiMenuItem-dense': { minHeight: 26, paddingTop: 2, paddingBottom: 2 },
   '.MuiButtonBase-root.Mui-focusVisible': {
     outline: '2px solid var(--mui-palette-text-primary)',
     outlineOffset: -2,

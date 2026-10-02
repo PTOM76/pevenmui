@@ -58,7 +58,8 @@ function SubmenuItem({ entry, close, keyPrefix }: { entry: Extract<MenuEntry, { 
           setOpen((o) => o ?? 'mouse')
         }}
         onMouseLeave={closeSoon}
-        onClick={() => setOpen((o) => (o ? null : 'key'))}
+        // タップはマウスが乗った扱いの直後にクリックが来るので、乗っただけで開いたものは閉じずに残す
+        onClick={() => setOpen((o) => (o === 'key' ? null : 'key'))}
         onKeyDown={(e) => {
           if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
@@ -99,6 +100,11 @@ function SubmenuItem({ entry, close, keyPrefix }: { entry: Extract<MenuEntry, { 
       </Popper>
     </>
   )
+}
+
+/** サブメニューを開かず、中身を区切り線で囲んでその場に並べる（スマホの一覧用） */
+export function flattenEntries(entries: MenuEntry[]): MenuEntry[] {
+  return entries.flatMap((e): MenuEntry[] => ('submenu' in e ? [{ divider: true }, ...flattenEntries(e.submenu).map((s) => ('divider' in s || !e.disabled ? s : { ...s, disabled: true })), { divider: true }] : [e]))
 }
 
 /**
@@ -151,7 +157,8 @@ export function ContextMenu(props: {
       anchorPosition={props.position ? { top: props.position.y, left: props.position.x } : undefined}
       slotProps={{ paper: { sx: { maxHeight: MENU_MAX_HEIGHT } } }}
     >
-      {renderEntries(props.entries, props.onClose)}
+      {/* 指で操作する画面では、横に開くサブメニューは押しにくいのでその場に並べる */}
+      {renderEntries(window.matchMedia('(pointer: coarse)').matches ? flattenEntries(props.entries) : props.entries, props.onClose)}
     </Menu>
   )
 }
