@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ButtonBase, ClickAwayListener, MenuList, Paper, Popper } from '@mui/material'
-import { renderEntries, type MenuGroup } from './MenuList'
+import { MENU_MAX_HEIGHT, renderEntries, type MenuGroup } from './MenuList'
 
 /**
  * メニューバーの文字の並べ方。英字（Roboto）と日本語（システムのフォント）では文字の上下の余白が
@@ -168,7 +168,7 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
           placement="bottom-start"
           sx={{ zIndex: 'modal' }}
         >
-          <Paper elevation={4} sx={{ minWidth: 240, mt: 0.25 }}>
+          <Paper elevation={4} sx={{ minWidth: 240, mt: 0.25, maxHeight: MENU_MAX_HEIGHT, overflowY: 'auto' }}>
             <MenuList dense autoFocusItem sx={{ py: 0.5 }} onKeyDown={onMenuKey}>
               {open !== null && renderEntries(menus[open].entries, close)}
             </MenuList>
