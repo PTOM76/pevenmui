@@ -16,5 +16,6 @@
   "updateCheck": "今すぐ確認",
   "updateLatest": "最新バージョンです",
   "updateUnsupported": "この環境では確認できません",
-  "updateFailed": "確認に失敗しました（ネットワーク接続を確認してください）"
+  "updateFailed": "確認に失敗しました（ネットワーク接続を確認してください）",
+  "updateNotYet": "新しい版がまだ配信されていません。しばらくしてからもう一度お試しください"
 }

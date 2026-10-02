@@ -17,6 +17,17 @@ export function UpdateSection() {
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<UpdateCheckResult | null>(null)
 
+  const [updating, setUpdating] = useState(false)
+  const [notYet, setNotYet] = useState(false)
+  const update = async () => {
+    setUpdating(true)
+    setNotYet(false)
+    if (!(await updateNow())) {
+      setUpdating(false)
+      setNotYet(true)
+    }
+  }
+
   const check = async () => {
     setChecking(true)
     setResult(null)
@@ -42,10 +53,12 @@ export function UpdateSection() {
           </Typography>
           {/* 新しい版があれば、ここからそのまま更新できる */}
           {result.kind === 'found' && (
-            <Button size="small" variant="contained" onClick={() => void updateNow()}>
+            <Button size="small" variant="contained" disabled={updating} onClick={() => void update()}>
               {l.updateReload}
             </Button>
           )}
+          {updating && <CircularProgress size={14} />}
+          {notYet && <Typography sx={{ flexBasis: '100%', fontSize: 12, color: 'warning.main' }}>{l.updateNotYet}</Typography>}
         </Box>
       )}
     </Box>

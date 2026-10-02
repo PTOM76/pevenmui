@@ -1,14 +1,14 @@
 /**
  * 新しい版の確認。Service Worker の登録（UpdatePrompt で行う）を覚えておき、
- * 設定画面の「今すぐ確認」（UpdateSection）からも確認できるようにする。
+ * 設定画面の「今すぐ確認」（UpdateSection）やメニューからも確認・更新できるようにする。
  * 配信中の版は、ビルド時に書いた `version.json`（{ version, commit }）から読む
  */
 
 let registration: ServiceWorkerRegistration | null = null
-/** 待っている新しい版に入れ替えて読み込み直す（UpdatePrompt が useRegisterSW から渡す） */
-let applyUpdate: (() => void) | null = null
 /** 今動いている版（UpdatePrompt が受け取る） */
 let appBuild = ''
+/** 「新しい版があります」の通知を出す（UpdatePrompt が渡す。引数は配信中の版） */
+let showPrompt: ((build: string | null) => void) | null = null
 
 /** バージョンとコミットを、表示する形にする（例: 1.0.3 (47a7e39)） */
 export const formatBuild = (version: string, commit: string) => `${version} (${commit})`
@@ -37,13 +37,21 @@ export function setRegistration(r: ServiceWorkerRegistration) {
   registration = r
 }
 
-/** UpdatePrompt が、新しい版に入れ替える関数を渡す */
-export function setApplyUpdate(fn: () => void) {
-  applyUpdate = fn
+/** UpdatePrompt が、通知を出す関数を渡す */
+export function setShowPrompt(fn: (build: string | null) => void) {
+  showPrompt = fn
+}
+
+/** 「新しい版があります」の通知を出す（メニューの「更新を確認」で見つけたとき） */
+export function promptUpdate(build: string | null) {
+  showPrompt?.(build)
 }
 
 /** 入れ替えを待つ最長時間（ミリ秒）。過ぎたらそのまま読み込み直す */
 const SWAP_TIMEOUT_MS = 5000
+/** 新しい版がまだ届いていないときに取り直す回数と間隔（配信先のキャッシュで、版の番号だけ先に新しくなることがある） */
+const FETCH_TRIES = 6
+const FETCH_INTERVAL_MS = 5000
 
 /** 入れ替え中の Service Worker が、インストールを終えるまで待つ */
 function installed(sw: ServiceWorker | null): Promise<ServiceWorker | null> {
@@ -54,19 +62,26 @@ function installed(sw: ServiceWorker | null): Promise<ServiceWorker | null> {
   })
 }
 
-/**
- * 新しい版をダウンロードし、入れ替えて読み込み直す（設定の「更新」から呼ぶ）。
- * まだ待っている版が無ければここで取りに行き、インストールが終わるのを待ってから入れ替える
- */
-export async function updateNow() {
-  const r = registration
-  if (r && !r.waiting && !r.installing) await r.update().catch(() => {})
-  const sw = r ? (r.waiting ?? (await installed(r.installing))) : null
-  if (!sw) {
-    // 入れ替えるものが無ければ、UpdatePrompt の方法に任せる（開発サーバーなど）
-    applyUpdate?.()
-    return
+/** 待っている新しい版。無ければ取りに行き、届くまで何回か取り直す */
+async function fetchWaiting(r: ServiceWorkerRegistration): Promise<ServiceWorker | null> {
+  for (let i = 0; i < FETCH_TRIES; i++) {
+    const sw = r.waiting ?? (await installed(r.installing))
+    if (sw) return sw
+    if (i > 0) await new Promise((res) => setTimeout(res, FETCH_INTERVAL_MS))
+    await r.update().catch(() => {})
   }
+  return r.waiting ?? (await installed(r.installing))
+}
+
+/**
+ * 新しい版をダウンロードし、入れ替えて読み込み直す（設定・通知の「更新」から呼ぶ）。
+ * 入れ替えられなかったら false（新しい版がまだ配信されていない、など）
+ */
+export async function updateNow(): Promise<boolean> {
+  const r = registration
+  if (!r) return false
+  const sw = await fetchWaiting(r)
+  if (!sw) return false
   let reloaded = false
   const reload = () => {
     if (reloaded) return
@@ -76,6 +91,7 @@ export async function updateNow() {
   navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true })
   setTimeout(reload, SWAP_TIMEOUT_MS)
   sw.postMessage({ type: 'SKIP_WAITING' })
+  return true
 }
 
 /** 確認の結果。found なら `build` に配信中の版（取れなければ null）を入れる */
