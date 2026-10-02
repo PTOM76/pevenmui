@@ -19,6 +19,8 @@ export type MenuEntry =
 export interface MenuGroup {
   label: string
   entries: MenuEntry[]
+  /** アクセスキー（英字1文字。例: "F"）。「ファイル(F)」と表示し、メニューバーに入っているときにこのキーで開く */
+  accessKey?: string
 }
 
 /**

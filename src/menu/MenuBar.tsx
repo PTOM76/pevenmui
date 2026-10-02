@@ -15,11 +15,24 @@ export const BAR_TEXT_SX = {
 } as const
 
 /**
+ * アプリとしてインストールして開いているか（アドレスバーのない窓）。Alt+英字はブラウザのタブではブラウザ自身のメニューと
+ * ぶつかるので、そのときだけ使う
+ */
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: window-controls-overlay)').matches
+}
+
+/** `key` が `group` のアクセスキーか（大文字・小文字は区別しない） */
+const isAccessKey = (group: MenuGroup, key: string) => !!group.accessKey && key.length === 1 && key.toUpperCase() === group.accessKey.toUpperCase()
+
+/**
  * PC 用の、Windows のアプリと同じ操作感のメニューバー。
  * - クリックで開き、同じ項目をもう一度クリックすると閉じる
  * - 開いている間は、隣の項目にマウスを乗せるだけで切り替わる
  * - マウスが離れても閉じない。外側をクリックするか Esc で閉じる
  * - Alt / F10 でメニューバーに入り、← → で項目を移動、↓ / Enter で開く
+ * - アクセスキー（`accessKey`）があれば「ファイル(F)」と表示する。メニューバーに入っているときはその英字で開く。
+ *   アプリとしてインストールして開いているときは、Alt+英字でも直接開く
  * MUI の Menu は画面全体を覆う透明な幕を出し、隣の項目へのマウス移動をふさぐため、幕のない Popper で作る
  */
 export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
@@ -29,12 +42,25 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
   const close = () => setOpen(null)
   const wrap = (i: number) => (i + menus.length) % menus.length
+  const menusRef = useRef(menus)
+  menusRef.current = menus
 
   // Alt（単独で押して離したとき）/ F10 でメニューバーに入る。Windows と同じく、もう一度押すと抜ける
   useEffect(() => {
     let altAlone = false
     const down = (e: globalThis.KeyboardEvent) => {
       altAlone = e.key === 'Alt' && !e.repeat
+      // Alt+英字で直接開く（アプリとしてインストールして開いているときだけ）
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key !== 'Alt' && isStandalone()) {
+        const i = menusRef.current.findIndex((m) => isAccessKey(m, e.code.startsWith('Key') ? e.code.slice(3) : e.key))
+        if (i >= 0) {
+          e.preventDefault()
+          altAlone = false
+          setFocus(i)
+          setOpen(i)
+          return
+        }
+      }
       if (e.key === 'F10' && !e.shiftKey) {
         e.preventDefault()
         toggleBarFocus()
@@ -71,7 +97,13 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
       setFocus(to)
       buttons.current[to]?.focus()
     }
-    if (e.key === 'ArrowRight') move(wrap(index + 1))
+    const byKey = menus.findIndex((m) => isAccessKey(m, e.key))
+    if (byKey >= 0) {
+      // アクセスキーの英字で、そのメニューを開く
+      e.preventDefault()
+      setFocus(byKey)
+      setOpen(byKey)
+    } else if (e.key === 'ArrowRight') move(wrap(index + 1))
     else if (e.key === 'ArrowLeft') move(wrap(index - 1))
     else if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
@@ -123,6 +155,11 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
             }}
           >
             {m.label}
+            {m.accessKey && (
+              <span>
+                (<u>{m.accessKey}</u>)
+              </span>
+            )}
           </ButtonBase>
         ))}
         <Popper
