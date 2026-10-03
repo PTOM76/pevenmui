@@ -13,6 +13,7 @@ export { SettingsDialog, matchCategories, type SettingsCategory } from './settin
 export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPortal'
 export { WindowDialog, WindowModeContext } from './window/WindowDialog'
 export { AboutDialog, ShortcutsDialog } from './dialog/AboutDialog'
+export { LicensesDialog, type LicenseEntry } from './dialog/LicensesDialog'
 export { AppHeader, HeaderIcon, useMobileLayout } from './layout/AppHeader'
 export { OverflowRow } from './layout/OverflowRow'
 export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'
