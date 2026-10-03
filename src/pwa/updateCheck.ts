@@ -7,6 +7,8 @@
 let registration: ServiceWorkerRegistration | null = null
 /** 今動いている版（UpdatePrompt が受け取る） */
 let appBuild = ''
+/** 開発版の更新（バージョンが同じでコミットだけ違う版）も知らせるか（UpdatePrompt が受け取る） */
+let devUpdates = false
 /** 「新しい版があります」の通知を出す（UpdatePrompt が渡す。引数は配信中の版） */
 let showPrompt: ((build: string | null) => void) | null = null
 
@@ -26,6 +28,17 @@ export async function fetchLatestBuild(): Promise<string | null> {
 }
 
 export const getAppBuild = () => appBuild
+
+/** `formatBuild` の形からバージョンだけを取り出す */
+const versionOf = (build: string) => build.replace(/ \(.*\)$/, '')
+
+/** 配信中の版 `latest` を、新しい版として知らせるか。開発版の更新を受け取らないなら、バージョンが変わったときだけ */
+export const isNewer = (latest: string, current: string) => latest !== current && (devUpdates || versionOf(latest) !== versionOf(current))
+
+/** 開発版の更新も知らせるかを決める（UpdatePrompt が描くときに呼ぶ） */
+export function setDevUpdates(on: boolean) {
+  devUpdates = on
+}
 
 /** 今動いている版を覚える（UpdatePrompt が描くときに呼ぶ。Service Worker が無い開発サーバーでも表示できるように） */
 export function setAppBuild(build: string) {
@@ -103,5 +116,5 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
   if (!registration) return { kind: 'unsupported' }
   const build = await fetchLatestBuild()
   if (build === null) return { kind: 'failed' }
-  return build === appBuild ? { kind: 'latest' } : { kind: 'found', build }
+  return isNewer(build, appBuild) ? { kind: 'found', build } : { kind: 'latest' }
 }

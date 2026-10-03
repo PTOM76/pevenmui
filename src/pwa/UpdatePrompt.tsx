@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { fill, useLabels } from '../labels'
-import { fetchLatestBuild, setAppBuild, setRegistration, setShowPrompt, updateNow } from './updateCheck'
+import { fetchLatestBuild, isNewer, setAppBuild, setDevUpdates, setRegistration, setShowPrompt, updateNow } from './updateCheck'
 
 /** 開いたままでも新しい版に気づけるよう、更新を確認する間隔（ミリ秒） */
 const CHECK_INTERVAL_MS = 60 * 60 * 1000
@@ -13,11 +13,12 @@ const CHECK_INTERVAL_MS = 60 * 60 * 1000
  * 新しい版が公開されたときの通知（vite-plugin-pwa の registerType: 'prompt' で使う）。
  * 勝手に入れ替えると作業中に再読み込みされるため、利用者が「更新」を押したときだけ切り替える。
  * メニューの「更新を確認」で見つけたときも、この通知を出す（promptUpdate）。
- * `build` は今動いている版（formatBuild で作る）
+ * `build` は今動いている版（formatBuild で作る）。`devUpdates` なら、バージョンが同じでコミットだけ違う版（開発版）も知らせる
  */
-export function UpdatePrompt({ build }: { build: string }) {
+export function UpdatePrompt({ build, devUpdates = false }: { build: string; devUpdates?: boolean }) {
   const l = useLabels()
   setAppBuild(build)
+  setDevUpdates(devUpdates)
   const {
     needRefresh: [needRefresh, setNeedRefresh],
   } = useRegisterSW({
@@ -52,9 +53,9 @@ export function UpdatePrompt({ build }: { build: string }) {
     setLatest(undefined)
     void fetchLatestBuild().then(setLatest)
   }, [needRefresh, asked])
-  // 配信中の版が今動いている版と同じなら通知しない。再読み込みで新しい画面だけ先に読み込んだときなどに、
+  // 配信中の版が今動いている版と同じ（開発版を受け取らないならバージョンが同じ）なら通知しない。再読み込みで新しい画面だけ先に読み込んだときなどに、
   // 古い Service Worker の入れ替えだけが残っていることがあり、そのまま通知すると「1.0.5 → 1.0.5」になる
-  const open = (needRefresh || asked) && latest !== undefined && latest !== build
+  const open = (needRefresh || asked) && latest !== undefined && (latest === null || isNewer(latest, build))
 
   const [updating, setUpdating] = useState(false)
   const [notYet, setNotYet] = useState(false)
