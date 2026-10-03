@@ -14,7 +14,7 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 | `usePanelWidth` / `usePersistentNumber` | 幅を変えられる分割バー（幅は localStorage に残る） |
 | `Group` / `Row` / `Choice` / `Check` / `NarrowContext` | 設定画面の部品（PC は Windows 風、スマホは Android 風） |
 | `SearchContext` / `useHighlight` | 設定の検索で一致した項目に色を付ける |
-| `SettingsDialog` | 設定画面の外枠（分類・検索。PC は OK / 適用、スマホはその場で反映） |
+| `SettingsDialog` | 設定画面の外枠（分類と検索。分類は `parent` でサブアイテムにできる。PC は OK / 適用、スマホはその場で反映） |
 | `AppHeader` / `HeaderIcon` | 上部のバー（PC はメニューバー、スマホは ⋮ メニュー） |
 | `AboutDialog` / `ShortcutsDialog` | このアプリについて、ショートカット一覧 |
 | `useFileDrop` | ページのどこにドロップしてもファイルを受け取る |

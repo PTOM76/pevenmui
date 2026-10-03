@@ -30,6 +30,8 @@ export interface SettingsCategory<C extends string> {
   label: string
   /** 検索の対象（その分類のグループ名・項目名・説明文）。項目を足したらここにも足す */
   texts: string[]
+  /** 親の分類（サブアイテムにするとき）。親より後に並べる */
+  parent?: C
 }
 
 interface Props<S, C extends string> {
@@ -50,10 +52,12 @@ interface Props<S, C extends string> {
   focusSignal?: number
 }
 
-/** 検索語に一致する項目がある分類（分類名そのものの一致も含む）。検索語が空ならすべて */
+/** 検索語に一致する項目がある分類（分類名そのものの一致も含む）。一致したサブアイテムの親も含める。検索語が空ならすべて */
 export function matchCategories<C extends string>(categories: SettingsCategory<C>[], query: string) {
   if (!query.trim()) return categories
-  return categories.filter((c) => matches(c.label, query) || c.texts.some((s) => matches(s, query)))
+  const hit = new Set(categories.filter((c) => matches(c.label, query) || c.texts.some((s) => matches(s, query))).map((c) => c.id))
+  for (const c of categories) if (hit.has(c.id) && c.parent) hit.add(c.parent)
+  return categories.filter((c) => hit.has(c.id))
 }
 
 /**
@@ -76,10 +80,15 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
     const id = requestAnimationFrame(() => tabListRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus())
     return () => cancelAnimationFrame(id)
   }, [p.open])
-  const shown = matchCategories(p.categories, query)
-  const shownIds = shown.map((c) => c.id)
+  const matched = matchCategories(p.categories, query)
   // 選んでいた分類が絞り込みで消えたら、残った最初の分類を出す
-  const current = shownIds.includes(category) ? category : (shownIds[0] ?? category)
+  const current = matched.some((c) => c.id === category) ? category : (matched[0]?.id ?? category)
+  const parentOf = (id: C) => p.categories.find((c) => c.id === id)?.parent
+  // PC の一覧: サブアイテムは、親かその子を選んでいるときだけ出す（検索中は一致したものをすべて出す）
+  const expanded = parentOf(current) ?? current
+  const shown = query.trim() ? matched : matched.filter((c) => !c.parent || c.parent === expanded)
+  const shownIds = shown.map((c) => c.id)
+  const childrenOf = (id: C) => matched.filter((c) => c.parent === id)
   const [draft, setDraft] = useState(p.settings)
   // スマホで開いている分類の画面（null なら一覧）
   const [page, setPage] = useState<C | null>(null)
@@ -152,22 +161,36 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
       <NarrowContext.Provider value>
         <Dialog open={p.open} onClose={p.onClose} fullScreen>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, height: 56, px: 0.5, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-            <IconButton aria-label={l.back} onClick={() => (page ? setPage(null) : p.onClose())}>
+            <IconButton aria-label={l.back} onClick={() => (page ? setPage(parentOf(page) ?? null) : p.onClose())}>
               <FontAwesomeIcon icon={faArrowLeft} />
             </IconButton>
             <Typography sx={{ fontSize: 18, fontWeight: 500 }}>{page ? label(page) : p.title}</Typography>
           </Box>
           <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
             {page ? (
-              <Box sx={{ p: 2 }}>
-                <SearchContext.Provider value={query}>{pages[page]}</SearchContext.Provider>
-              </Box>
+              <>
+                {/* サブアイテムへ進む行（Android の設定と同じく、画面の先頭に並べる） */}
+                {childrenOf(page).length > 0 && (
+                  <List sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    {childrenOf(page).map((c) => (
+                      <ListItemButton key={c.id} onClick={() => setPage(c.id)} sx={{ py: 1.5 }}>
+                        <Typography sx={{ flex: 1, fontSize: 15 }}>{c.label}</Typography>
+                        <FontAwesomeIcon icon={faChevronRight} style={{ opacity: 0.5 }} />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                )}
+                <Box sx={{ p: 2 }}>
+                  <SearchContext.Provider value={query}>{pages[page]}</SearchContext.Provider>
+                </Box>
+              </>
             ) : (
               <List>
                 <Box sx={{ px: 2, pb: 1 }}>{searchField}</Box>
                 {noResults}
-                {shown.map((c) => (
-                  <ListItemButton key={c.id} onClick={() => setPage(c.id)} sx={{ py: 1.5 }}>
+                {/* サブアイテムは親の画面から進む（検索中は一致したものを字下げして並べる） */}
+                {(query.trim() ? matched : matched.filter((c) => !c.parent)).map((c) => (
+                  <ListItemButton key={c.id} onClick={() => setPage(c.id)} sx={{ py: 1.5, pl: c.parent ? 4 : 2 }}>
                     <Typography sx={{ flex: 1, fontSize: 15 }}>{c.label}</Typography>
                     <FontAwesomeIcon icon={faChevronRight} style={{ opacity: 0.5 }} />
                   </ListItemButton>
@@ -198,7 +221,7 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
                 // 選ばれている分類だけを Tab で止まる場所にする（ほかへは矢印キーで移る）
                 tabIndex={c.id === current ? 0 : -1}
                 onClick={() => setCategory(c.id)}
-                sx={{ fontSize: 13 }}
+                sx={{ fontSize: 13, pl: c.parent ? 4 : 2 }}
               >
                 {c.label}
               </ListItemButton>
