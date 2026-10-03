@@ -8,6 +8,7 @@ export {
   canPickFiles,
   pickSaveTarget,
   pickOpenFile,
+  pickOpenFiles,
   listRecent,
   rememberLaunched,
   rememberDropped,

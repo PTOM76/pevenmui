@@ -107,21 +107,27 @@ export async function pickSaveTarget(
 }
 
 /**
- * 開くファイルを選ぶ（`exts` は「.wav」のような拡張子）。選んだファイルは最近使用したファイルに記録する。
+ * 開くファイルを選ぶ（`exts` は「.wav」のような拡張子）。`multiple` なら複数選べる。選んだ最初のファイルは最近使用したファイルに記録する。
  * 使えない環境では undefined を返す（呼び出し側で input を使う）。やめたときは null
  */
-export async function pickOpenFile(exts: string[], description: string): Promise<File | null | undefined> {
+export async function pickOpenFiles(exts: string[], description: string, multiple = false): Promise<File[] | null | undefined> {
   const pick = (window as PickerWindow).showOpenFilePicker
   if (!pick || !canPickFiles()) return undefined
   try {
-    const [handle] = await pick({ ...pickerBase('open'), types: [{ description, accept: { 'application/octet-stream': exts } }] })
-    const file = await handle.getFile()
-    void addRecent(handle)
-    return file
+    const handles = await pick({ ...pickerBase('open'), multiple, types: [{ description, accept: { 'application/octet-stream': exts } }] })
+    const files = await Promise.all(handles.map((h) => h.getFile()))
+    if (handles[0]) void addRecent(handles[0])
+    return files
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') return null
     return undefined
   }
+}
+
+/** 開くファイルを1つ選ぶ（`pickOpenFiles` の1つ版） */
+export const pickOpenFile = async (exts: string[], description: string): Promise<File | null | undefined> => {
+  const files = await pickOpenFiles(exts, description)
+  return files && (files[0] ?? null)
 }
 
 /** 最近使用したファイル（新しい順）。ファイルの参照（ハンドル）を IndexedDB に保存する */
