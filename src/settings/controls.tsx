@@ -70,25 +70,26 @@ export function Choice<T extends string>(p: { value: T; onChange: (v: T) => void
   )
 }
 
-export function Check(p: { checked: boolean; onChange: (v: boolean) => void; label: string; help?: string }) {
+export function Check(p: { checked: boolean; onChange: (v: boolean) => void; label: string; help?: string; disabled?: boolean }) {
   // 項目名か説明文が検索語に一致したら、項目名に色を付ける
   const hit = useHighlight(p.label, p.help)
   // スマホは Android の設定と同じく、行全体を押せる右寄せのスイッチにする
   if (useContext(NarrowContext))
     return (
-      <Box component="label" sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+      <Box component="label" sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: p.disabled ? 'default' : 'pointer' }}>
         <Box sx={{ flex: 1 }}>
           <Typography sx={{ fontSize: 14, width: 'fit-content', ...hit }}>{p.label}</Typography>
           {p.help && <Typography className="selectable" sx={{ fontSize: 12, color: 'text.secondary' }}>{p.help}</Typography>}
         </Box>
-        <Switch checked={p.checked} onChange={(e) => p.onChange(e.target.checked)} />
+        <Switch checked={p.checked} disabled={p.disabled} onChange={(e) => p.onChange(e.target.checked)} />
       </Box>
     )
   return (
     // 幅 0 + 最小幅 100%: 長い説明文で項目名の列が広がらないようにしつつ、行の幅いっぱいで折り返す
     <Box sx={{ gridColumn: '1 / -1', width: 0, minWidth: '100%' }}>
       <FormControlLabel
-        control={<Checkbox size="small" checked={p.checked} onChange={(e) => p.onChange(e.target.checked)} />}
+        control={<Checkbox size="small" checked={p.checked} disabled={p.disabled} onChange={(e) => p.onChange(e.target.checked)} />}
+        disabled={p.disabled}
         label={p.label}
         slotProps={{ typography: { sx: { fontSize: 13, ...hit } } }}
       />
