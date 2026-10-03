@@ -21,7 +21,7 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 | `PevenLabels` / `jaLabels` / `enLabels` | 部品の中の文字（キャンセル・適用など）を日本語・英語で切り替える |
 | `useStableFn` | 常に最新の関数を呼ぶ、作り直されない関数（`memo` した部品に渡す） |
 | `useLeaveGuard` | 閉じるときにブラウザの確認を表示する |
-| `pevenmui/web` | React を使わない部品。`isMobile` / `isStandalone`。Worker からも読み込める |
+| `pevenmui/web` | React を使わない部品。IndexedDB（`createIdb`）、`isMobile` / `isStandalone`。Worker からも読み込める |
 | `pevenmui/pwa` | 新しい版の通知（`UpdatePrompt`）と確認（`UpdateSection`）。vite-plugin-pwa（registerType: 'prompt'）を使うアプリだけが読み込む |
 
 ## 使い方
