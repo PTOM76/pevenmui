@@ -55,8 +55,8 @@ interface FileHandle {
   getFile(): Promise<File>
   createWritable(): Promise<{ write(data: Blob): Promise<void>; close(): Promise<void> }>
   isSameEntry(other: FileHandle): Promise<boolean>
-  queryPermission(d: { mode: 'read' }): Promise<PermissionState>
-  requestPermission(d: { mode: 'read' }): Promise<PermissionState>
+  queryPermission(d: { mode: 'read' | 'readwrite' }): Promise<PermissionState>
+  requestPermission(d: { mode: 'read' | 'readwrite' }): Promise<PermissionState>
 }
 type PickerWindow = Window & {
   showSaveFilePicker?: (o: PickerOptions & { suggestedName?: string }) => Promise<FileHandle>
@@ -72,8 +72,38 @@ export const canPickFiles = () => {
 /** 用途（`id`）ごとにフォルダを覚えさせる。覚えさせないときは毎回 `startFolder` から始める */
 const pickerBase = (kind: string): PickerOptions => (options.rememberFolder ? { id: `${idPrefix}-${kind}`, startIn: options.startFolder } : { startIn: options.startFolder })
 
-/** 選んだ保存先。null は選ぶのをやめたとき */
-export type SaveTarget = { write: (blob: Blob) => Promise<void> } | null
+/** 選んだ保存先。null は選ぶのをやめたとき。`file` は上書き保存に使うファイルの参照（ダウンロードのときはなし） */
+export type SaveTarget = { write: (blob: Blob) => Promise<void>; file?: SavedFile } | null
+
+/** 開いた、または保存したファイルの参照（`overwriteTarget` で上書きする） */
+export type SavedFile = { readonly name: string }
+
+/** 選ぶ画面や最近使用したファイルから開いたファイルの参照 */
+const opened = new WeakMap<File, FileHandle>()
+
+/** `file` を開いたときの参照（選ぶ画面などから開いたときだけ。上書き保存に使う） */
+export const fileRefOf = (file: File): SavedFile | undefined => opened.get(file)
+
+const writeTo = (handle: FileHandle, remember: boolean): NonNullable<SaveTarget> => ({
+  file: handle,
+  write: async (blob) => {
+    const w = await handle.createWritable()
+    await w.write(blob)
+    await w.close()
+    if (remember) void addRecent(handle)
+  },
+})
+
+/** 前に開いた、または保存したファイルに上書きする保存先。書き込みを許可されなければ null */
+export async function overwriteTarget(file: SavedFile, remember = false): Promise<SaveTarget> {
+  const handle = file as FileHandle
+  try {
+    if ((await handle.queryPermission({ mode: 'readwrite' })) !== 'granted' && (await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return null
+    return writeTo(handle, remember)
+  } catch {
+    return null
+  }
+}
 
 /**
  * 保存先を選ぶ。`kind` ごとにフォルダを覚える。`remember` なら保存したファイルを最近使用したファイルに記録する。
@@ -92,14 +122,7 @@ export async function pickSaveTarget(
   if (!pick || !canPickFiles()) return download
   try {
     const handle = await pick({ suggestedName: fileName, ...pickerBase(kind), types: [{ description: type.description, accept: { [type.mime]: [type.ext] } }] })
-    return {
-      write: async (blob) => {
-        const w = await handle.createWritable()
-        await w.write(blob)
-        await w.close()
-        if (remember) void addRecent(handle)
-      },
-    }
+    return writeTo(handle, remember)
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') return null
     return download
@@ -116,6 +139,7 @@ export async function pickOpenFiles(exts: string[], description: string, multipl
   try {
     const handles = await pick({ ...pickerBase('open'), multiple, types: [{ description, accept: { 'application/octet-stream': exts } }] })
     const files = await Promise.all(handles.map((h) => h.getFile()))
+    files.forEach((f, i) => opened.set(f, handles[i]))
     if (handles[0]) void addRecent(handles[0])
     return files
   } catch (e) {
@@ -148,7 +172,10 @@ export async function listRecent(): Promise<RecentFile[]> {
 }
 
 /** OS から渡されたファイル（ダブルクリックで起動したとき）を、最近使用したファイルに記録する */
-export const rememberLaunched = (handle: unknown) => void addRecent(handle as FileHandle)
+export function rememberLaunched(handle: unknown, file?: File) {
+  if (file) opened.set(file, handle as FileHandle)
+  void addRecent(handle as FileHandle)
+}
 
 /**
  * ドロップされたファイルを、最近使用したファイルに記録する。ドロップのイベントの中で呼ぶ
@@ -185,6 +212,7 @@ export async function openRecent(r: RecentFile): Promise<File | null> {
   try {
     if ((await r.handle.queryPermission({ mode: 'read' })) !== 'granted' && (await r.handle.requestPermission({ mode: 'read' })) !== 'granted') return null
     const file = await r.handle.getFile()
+    opened.set(file, r.handle)
     void addRecent(r.handle)
     return file
   } catch {
