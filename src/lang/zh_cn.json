@@ -17,5 +17,7 @@
   "updateLatest": "已是最新版本",
   "updateUnsupported": "此环境无法检查",
   "updateFailed": "检查失败（请检查网络连接）",
-  "updateNotYet": "新版本尚未发布，请稍后再试"
+  "updateNotYet": "新版本尚未发布，请稍后再试",
+  "jobDetails": "正在进行的处理",
+  "jobCancel": "中止"
 }

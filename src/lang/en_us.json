@@ -17,5 +17,7 @@
   "updateLatest": "You are on the latest version",
   "updateUnsupported": "Cannot check in this environment",
   "updateFailed": "Check failed (please check your network connection)",
-  "updateNotYet": "The new version is not available yet. Please try again in a few minutes"
+  "updateNotYet": "The new version is not available yet. Please try again in a few minutes",
+  "jobDetails": "Running tasks",
+  "jobCancel": "Cancel"
 }
