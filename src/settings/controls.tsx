@@ -18,12 +18,24 @@ export function Group({ title, children }: { title: string; children: ReactNode 
       </Box>
     )
   return (
-    <Box component="fieldset" sx={{ m: 0, mb: 2, px: 1.5, pt: 0.5, pb: 1.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}>
+    <Box component="fieldset" sx={{ m: 0, mb: 2, px: 1.5, pt: 0.5, pb: 1.5, border: 1, borderColor: 'divider', borderRadius: 0.5, minWidth: 0, containerType: 'inline-size' }}>
       <Typography component="legend" sx={{ px: 0.5, fontSize: 12, color: 'text.secondary', ...hit }}>
         {title}
       </Typography>
-      {/* ラベル列は一番長いラベルに合わせ、入力列は残りの幅に収める（長い選択肢は省略表示） */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'max-content minmax(0, 360px)', alignItems: 'center', columnGap: 2, rowGap: 1 }}>
+      {/*
+        ラベル列は一番長いラベルに合わせるが、幅の半分まで（超えたら折り返す）。入力列は残りの幅に収める（長い選択肢は省略表示）。
+        2 列にまたがる項目の長い文が、ラベル列を広げて入力列を潰さないよう上限を付ける。狭いときはラベルの下に入力欄を置く
+      */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'fit-content(50%) minmax(0, 360px)',
+          alignItems: 'center',
+          columnGap: 2,
+          rowGap: 1,
+          '@container (max-width: 360px)': { gridTemplateColumns: 'minmax(0, 1fr)', rowGap: 0.5 },
+        }}
+      >
         {children}
       </Box>
     </Box>
@@ -44,11 +56,11 @@ export function Row({ label, help, children }: { label: string; help?: string; c
     )
   return (
     <>
-      <Typography sx={{ fontSize: 13, whiteSpace: 'nowrap', justifySelf: 'start', ...hit }}>{label}</Typography>
+      <Typography sx={{ fontSize: 13, justifySelf: 'start', ...hit }}>{label}</Typography>
       <Box sx={{ minWidth: 0 }}>{children}</Box>
       {/* 補足は入力欄の列の次の行に置く（同じマスに入れると行が高くなり、ラベルが入力欄とずれる） */}
       {help && (
-        <Box sx={{ gridColumn: 2, mt: -1 }}>
+        <Box sx={{ gridColumn: '-2 / -1', mt: -1 }}>
           {helpText(11)}
         </Box>
       )}
