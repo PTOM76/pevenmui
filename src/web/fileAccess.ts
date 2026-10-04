@@ -40,6 +40,9 @@ export function initFileAccess(o: { store: Pick<Idb, 'get' | 'put'>; idPrefix: s
   idPrefix = o.idPrefix
 }
 
+/** 準備で渡された保存先（folderSave.ts も使う） */
+export const fileStore = () => store
+
 // TypeScript の標準の型にまだない部分（Chrome・Edge の File System Access API）
 interface PickerType {
   description?: string

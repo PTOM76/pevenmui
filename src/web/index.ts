@@ -24,3 +24,4 @@ export {
   type SaveTarget,
   type RecentFile,
 } from './fileAccess'
+export { canSaveToFolder, chooseSaveFolder, saveToFolder, savedFolderName } from './folderSave'
