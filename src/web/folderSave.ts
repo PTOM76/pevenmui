@@ -1,4 +1,4 @@
-import { fileStore } from './fileAccess'
+import { canPickFiles, fileStore } from './fileAccess'
 
 /**
  * 決めたフォルダーへの保存（File System Access API。Chrome・Edge のみ）。初回にフォルダーを選んで覚え（IndexedDB）、
@@ -15,8 +15,8 @@ type DirWindow = Window & { showDirectoryPicker?: (o?: { id?: string; mode?: 're
 
 const key = (kind: string) => `saveFolder:${kind}`
 
-/** フォルダーへの保存を使えるか */
-export const canSaveToFolder = () => typeof window !== 'undefined' && !!(window as DirWindow).showDirectoryPicker
+/** フォルダーへの保存を使えるか（ブラウザが対応していて、設定のファイル選択の方式でも使うとき。使わないときはダウンロードにする） */
+export const canSaveToFolder = () => typeof window !== 'undefined' && !!(window as DirWindow).showDirectoryPicker && canPickFiles()
 
 /** 覚えているフォルダーの名前（なければ null） */
 export async function savedFolderName(kind: string): Promise<string | null> {
@@ -67,25 +67,15 @@ async function writeFile(dir: DirHandle, name: string, blob: Blob) {
 const exists = (dir: DirHandle, name: string) => dir.getFileHandle(name).then(() => true, () => false)
 
 /**
- * `kind` のフォルダーに `fileName` で保存する保存先（書き出しで、保存先を聞かずにそのフォルダーへ保存するため）。
+ * `kind` のフォルダーに `fileName` で保存する保存先（編集ソフトの書き出しのように、決めたフォルダーとファイル名へ保存する）。
  * 先にフォルダーと書き込みの許可を確かめ（ユーザー操作の中で呼ぶ）、時間のかかる処理のあとで `write` する。
- * 同じ名前があれば上書きせず「名前 (2).ext」のようにずらす。フォルダーを選ぶのをやめたら null
+ * `exists` は同じ名前のファイルがすでにあるか（上書きしてよいかは呼び出し側で確かめる）。フォルダーを選ぶのをやめたら null
  */
-export async function folderFileTarget(kind: string, fileName: string, win: Window = window): Promise<{ folder: string; write: (blob: Blob) => Promise<string> } | null> {
+export async function folderFileTarget(kind: string, fileName: string, win: Window = window): Promise<{ folder: string; name: string; exists: boolean; write: (blob: Blob) => Promise<void> } | null> {
   const dir = await folder(kind, win)
   if (!dir) return null
-  const safe = fileName.replace(/[\\/:*?"<>|]/g, '_')
-  const dot = safe.lastIndexOf('.')
-  const [stem, ext] = dot > 0 ? [safe.slice(0, dot), safe.slice(dot)] : [safe, '']
-  return {
-    folder: dir.name,
-    write: async (blob) => {
-      let name = safe
-      for (let i = 2; await exists(dir, name); i++) name = `${stem} (${i})${ext}`
-      await writeFile(dir, name, blob)
-      return name
-    },
-  }
+  const name = fileName.replace(/[\\/:*?"<>|]/g, '_')
+  return { folder: dir.name, name, exists: await exists(dir, name), write: (blob) => writeFile(dir, name, blob) }
 }
 /**
  * `kind` のフォルダーへ、`base_01.ext`、`base_02.ext`… のうちまだ無い名前で保存する。保存した名前を返す（やめたら null）。
