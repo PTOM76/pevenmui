@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from 'react'
-import { AppBar, Box, IconButton, ListSubheader, Menu, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { DrillMenu } from '../menu/DrillMenu'
+import { AppBar, Box, IconButton, Menu, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { useLabels } from '../labels'
 import MenuBar from '../menu/MenuBar'
-import { flattenEntries, renderEntries, type MenuGroup } from '../menu/MenuList'
+import type { MenuGroup } from '../menu/MenuList'
 import { LANDSCAPE_PHONE } from '../theme'
 
 /** 上部のバーに置くアイコンボタン（無効時もツールチップを出すため span で包む）。PC では `small` にする */
@@ -21,7 +22,7 @@ export function HeaderIcon(p: { title: string; icon: IconDefinition; disabled?: 
   )
 }
 
-/** スマホ: Android の上部バーにある ⋮（その他）メニュー */
+/** スマホ: Android の上部バーにある ⋮（その他）メニュー。まとまり（PC のメニューバーと同じ）を選び、段階で開く */
 function OverflowMenu({ menus }: { menus: MenuGroup[] }) {
   const l = useLabels()
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
@@ -39,17 +40,7 @@ function OverflowMenu({ menus }: { menus: MenuGroup[] }) {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{ paper: { sx: { minWidth: 220, maxHeight: '80vh' } } }}
       >
-        {menus.flatMap((m): ReactNode[] => [
-          <ListSubheader key={`h-${m.label}`} sx={{ lineHeight: '32px' }}>
-            {m.label}
-          </ListSubheader>,
-          // スマホではショートカット表記は出さない
-          ...renderEntries(
-            flattenEntries(m.entries).map((e) => ('divider' in e ? e : { ...e, shortcut: undefined })),
-            close,
-            `${m.label}-`,
-          ),
-        ])}
+        <DrillMenu entries={menus.map((m) => ({ label: m.label, submenu: m.entries }))} onClose={close} />
       </Menu>
     </>
   )

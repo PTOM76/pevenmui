@@ -1,3 +1,4 @@
+import { DrillMenu } from './DrillMenu'
 import { vh } from '../uiScale'
 import { createContext, useContext, useMemo, useRef, useState } from 'react'
 import { Divider, ListItemIcon, ListItemText, Menu, MenuItem, MenuList, Paper, Popper, Typography } from '@mui/material'
@@ -172,7 +173,7 @@ export function renderEntries(entries: MenuEntry[], close: () => void, keyPrefix
   )
 }
 
-/** 右クリックで開くメニュー（`position` はクリック位置、null なら閉じている） */
+/** 右クリックで開くメニュー（`position` はクリック位置、null なら閉じている）。指で操作する画面では、サブメニューを段階で開く（DrillMenu） */
 export function ContextMenu(props: {
   position: { x: number; y: number } | null
   entries: MenuEntry[]
@@ -186,8 +187,7 @@ export function ContextMenu(props: {
       anchorPosition={props.position ? { top: props.position.y, left: props.position.x } : undefined}
       slotProps={{ paper: { sx: { maxHeight: 'calc(100vh - 48px)' } } }}
     >
-      {/* 指で操作する画面では、横に開くサブメニューは押しにくいのでその場に並べる */}
-      {renderEntries(window.matchMedia('(pointer: coarse)').matches ? flattenEntries(props.entries) : props.entries, props.onClose)}
+      {window.matchMedia('(pointer: coarse)').matches ? <DrillMenu entries={props.entries} onClose={props.onClose} /> : renderEntries(props.entries, props.onClose)}
     </Menu>
   )
 }
