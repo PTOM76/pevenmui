@@ -1,3 +1,4 @@
+import { getUiScale } from '../uiScale'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import createCache, { type EmotionCache } from '@emotion/cache'
@@ -37,6 +38,8 @@ interface Props {
   onClose: () => void
   /** 変わるたびに、開いている別の窓を手前に出す（開いたまま、もう一度開こうとしたときに増やす） */
   focusSignal?: number
+  /** 別の窓を開いたあと、高さを中身に合わせる（中身の高さが決まっているダイアログ用。設定画面のように窓いっぱいに広がるものには使わない） */
+  fitHeight?: boolean
   /** 窓を開けなかったとき（未対応・ブロック・権限なし）に代わりに出すもの */
   fallback: ReactNode
   children: ReactNode
@@ -145,8 +148,9 @@ async function openWindow(mode: ExternalMode, name: string, width: number, heigh
   // 窓の大きさの指定が無いと、ブラウザは別タブで開く
   if (mode === 'tab') return window.open('', name)
   const saved = loadPlacement(name)
-  const w = saved?.w ?? width
-  const h = saved?.h ?? height
+  // 画面の大きさ（zoom）を変えていれば、既定の大きさもその分広げる
+  const w = saved?.w ?? width * getUiScale()
+  const h = saved?.h ?? height * getUiScale()
   if (mode === 'pip') {
     // 位置は決められない（ブラウザが置く）。大きさだけ覚える
     if (!window.documentPictureInPicture) return null
@@ -305,6 +309,36 @@ export function WindowPortal(p: Props) {
     if (opened?.cache) opened.root.ownerDocument.title = p.title
   }, [opened, p.title])
 
+  // 高さを中身に合わせる。中身の各部分（本文・ボタン）の本来の高さを足し、窓の中の高さとの差だけ窓を伸び縮みさせる。
+  // 中身が変わったとき（書き出しの形式を変えて欄が増えたときなど）も合わせ直す
+  useEffect(() => {
+    const win = opened?.cache && opened.root.ownerDocument.defaultView
+    if (!p.fitHeight || !win || p.mode === 'tab' || p.mode === 'pip') return
+    const fit = () => {
+      const body = opened.root.firstElementChild as HTMLElement | null
+      if (!body) return
+      // 本文は窓いっぱいに伸ばしているので、測る間だけ伸ばすのをやめて本来の高さにする
+      const parts = [body, ...Array.from(body.children)] as HTMLElement[]
+      const saved = parts.map((e) => e.style.flex)
+      parts.forEach((e) => (e.style.flex = 'none'))
+      const need = Array.from(body.children).reduce((s, c) => s + (c as HTMLElement).offsetHeight, 0) * getUiScale()
+      parts.forEach((e, i) => (e.style.flex = saved[i]))
+      const target = Math.min(need, win.screen.availHeight * 0.9)
+      if (need > 0 && Math.abs(target - win.innerHeight) > 8) win.resizeBy(0, Math.round(target - win.innerHeight))
+    }
+    let raf = 0
+    const schedule = () => {
+      win.cancelAnimationFrame(raf)
+      raf = win.requestAnimationFrame(() => (raf = win.requestAnimationFrame(fit)))
+    }
+    schedule()
+    const observer = new MutationObserver(schedule)
+    observer.observe(opened.root, { childList: true, subtree: true })
+    return () => {
+      observer.disconnect()
+      win.cancelAnimationFrame(raf)
+    }
+  }, [opened, p.fitHeight, p.mode])
   // 開いたまま、もう一度開こうとしたとき（`focusSignal` が変わったとき）は、別の窓を手前に出す
   // （ページ内のダイアログはもとから手前にある。PiP はブラウザによっては前に出ない）
   useEffect(() => {
