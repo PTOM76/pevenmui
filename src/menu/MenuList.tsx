@@ -1,3 +1,4 @@
+import { vh } from '../uiScale'
 import { useRef, useState } from 'react'
 import { Divider, ListItemIcon, ListItemText, Menu, MenuItem, MenuList, Paper, Popper, Typography } from '@mui/material'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -26,7 +27,7 @@ export interface MenuGroup {
 }
 
 /** 画面に収まらない長さのメニューは、この高さで止めて中をスクロールする */
-export const MENU_MAX_HEIGHT = 'calc(100vh - 48px)'
+export const MENU_MAX_HEIGHT = `calc(${vh(100)} - 48px)`
 /** サブメニューを閉じるまでの猶予（ミリ秒）。斜めにマウスを動かして中へ入る間に閉じないように */
 const CLOSE_DELAY_MS = 200
 
@@ -158,7 +159,7 @@ export function ContextMenu(props: {
       onClose={props.onClose}
       anchorReference="anchorPosition"
       anchorPosition={props.position ? { top: props.position.y, left: props.position.x } : undefined}
-      slotProps={{ paper: { sx: { maxHeight: MENU_MAX_HEIGHT } } }}
+      slotProps={{ paper: { sx: { maxHeight: 'calc(100vh - 48px)' } } }}
     >
       {/* 指で操作する画面では、横に開くサブメニューは押しにくいのでその場に並べる */}
       {renderEntries(window.matchMedia('(pointer: coarse)').matches ? flattenEntries(props.entries) : props.entries, props.onClose)}

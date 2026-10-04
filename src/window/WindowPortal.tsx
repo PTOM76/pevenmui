@@ -68,7 +68,7 @@ function withContainer(outer: Theme, root: HTMLElement): Theme {
 /** ページ内の窓（<dialog>・popover）の見た目。中央に置き、MUI のダイアログに近い形にする */
 const IN_PAGE_CSS = `
 .pevenmui-window { padding: 0; border: none; border-radius: 4px; color: inherit; background: transparent;
-  width: min(720px, calc(100vw - 32px)); height: min(560px, calc(100vh - 32px)); box-shadow: 0 11px 15px -7px rgba(0,0,0,.2), 0 24px 38px 3px rgba(0,0,0,.14);
+  width: min(720px, calc(100vw / var(--ui-scale, 1) - 32px)); height: min(560px, calc(100vh / var(--ui-scale, 1) - 32px)); box-shadow: 0 11px 15px -7px rgba(0,0,0,.2), 0 24px 38px 3px rgba(0,0,0,.14);
   display: flex; flex-direction: column; overflow: hidden; margin: auto; inset: 0; position: fixed; }
 .pevenmui-window::backdrop { background: rgba(0,0,0,.5); }
 `
@@ -283,7 +283,8 @@ export function WindowPortal(p: Props) {
       htmlObserver = new MutationObserver(syncHtml)
       htmlObserver.observe(document.documentElement, { attributes: true })
       const root = doc.createElement('div')
-      root.style.cssText = 'height:100vh;display:flex;flex-direction:column'
+      root.style.cssText = 'height:calc(100vh / var(--ui-scale, 1));display:flex;flex-direction:column'
+      root.dataset.uiScaleRoot = ''
       doc.body.appendChild(root)
       w.addEventListener('pagehide', onHide)
       doc.addEventListener('keydown', onKey)
