@@ -1,7 +1,7 @@
 /**
  * 画面の大きさ（文字・入力欄・ボタンなどをまとめて拡大縮小する）。ページ全体に CSS の zoom をかける。
  * 部品の文字の大きさは各所で直接決めているので、テーマの文字の大きさではなく zoom で一律に変える。
- * Canvas は、拡大してもぼやけないよう、``canvasPixelRatio()``（devicePixelRatio × 倍率）で解像度を決める
+ * Canvas は、拡大してもぼやけないよう、`canvasPixelRatio()`（devicePixelRatio × 倍率）で解像度を決める
  */
 
 let scale = 1
