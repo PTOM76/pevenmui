@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { alpha } from '@mui/material'
 import { usePalette } from '../hooks/usePalette'
+import { canvasPixelRatio } from '../uiScale'
 
 /** 表示する範囲（dB） */
 const MIN_DB = -60
@@ -36,7 +37,7 @@ export function LevelMeter({ source, rows = 1, width = 64, height = 6, label }: 
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = canvasPixelRatio()
     canvas.width = Math.round(width * dpr)
     canvas.height = Math.round(height * dpr)
     const g = canvas.getContext('2d')
