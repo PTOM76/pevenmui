@@ -24,33 +24,39 @@ export async function savedFolderName(kind: string): Promise<string | null> {
   return h?.name ?? null
 }
 
-/** 保存先のフォルダーを選び直して覚える。やめたら null */
+/** 保存先のフォルダーを選び直して覚える。やめたら null（それ以外の失敗は投げる。黙って何も起きないと原因が分からないため） */
 export async function chooseSaveFolder(kind: string): Promise<string | null> {
+  return (await pickFolder(kind))?.name ?? null
+}
+
+async function pickFolder(kind: string): Promise<DirHandle | null> {
   const pick = (window as DirWindow).showDirectoryPicker
   if (!pick) return null
+  let h: DirHandle
   try {
-    const h = await pick({ id: `folder-${kind}`, mode: 'readwrite' })
-    await fileStore()?.put(key(kind), h)
-    return h.name
-  } catch {
-    return null
+    h = await pick({ id: `folder-${kind}`, mode: 'readwrite' })
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') return null
+    throw e
   }
+  await fileStore()?.put(key(kind), h)
+  return h
 }
 
 /** 覚えているフォルダー（なければ選ばせる）。書き込みの許可も求める。使えなければ null */
 async function folder(kind: string): Promise<DirHandle | null> {
   let h = (await fileStore()?.get(key(kind)).catch(() => null)) as DirHandle | null | undefined
   if (!h) {
-    if (!(await chooseSaveFolder(kind))) return null
-    h = (await fileStore()?.get(key(kind))) as DirHandle
+    h = await pickFolder(kind)
+    if (!h) return null
   }
-  if ((await h.queryPermission({ mode: 'readwrite' })) !== 'granted' && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') return null
+  if ((await h.queryPermission({ mode: 'readwrite' })) !== 'granted' && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') throw new Error(`「${h.name}」へ書き込む許可がありません`)
   return h
 }
 
 /**
  * `kind` のフォルダーへ、`base_01.ext`、`base_02.ext`… のうちまだ無い名前で保存する。保存した名前を返す（やめたら null）。
- * ユーザー操作の中で呼ぶ（初回のフォルダーの選択と、書き込みの許可の確認が出ることがある）
+ * ユーザー操作の中で呼ぶ（初回のフォルダーの選択と、書き込みの許可の確認が出ることがある）。書き込みを許可されなければ投げる
  */
 export async function saveToFolder(kind: string, base: string, ext: string, blob: Blob): Promise<{ folder: string; name: string } | null> {
   const dir = await folder(kind)
