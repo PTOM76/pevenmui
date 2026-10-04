@@ -1,5 +1,5 @@
 import { vh } from '../uiScale'
-import { useRef, useState } from 'react'
+import { createContext, useContext, useMemo, useRef, useState } from 'react'
 import { Divider, ListItemIcon, ListItemText, Menu, MenuItem, MenuList, Paper, Popper, Typography } from '@mui/material'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faChevronRight } from '@fortawesome/free-solid-svg-icons'
@@ -31,12 +31,37 @@ export const MENU_MAX_HEIGHT = `calc(${vh(100)} - 48px)`
 /** サブメニューを閉じるまでの猶予（ミリ秒）。斜めにマウスを動かして中へ入る間に閉じないように */
 const CLOSE_DELAY_MS = 200
 
+/**
+ * 同じ段で開いているサブメニューを閉じる関数。別のサブメニューを開いたら、前のものは猶予を待たずにすぐ閉じる
+ * （待つと、移った直後に 2 つのサブメニューが重なって見える）。いちばん上の段は、開くメニューが 1 つなので共通にする
+ */
+const SiblingContext = createContext<{ current: (() => void) | null }>({ current: null })
+
 /** 横に開くサブメニュー（マウスを乗せる・→ / Enter で開き、← / Esc で戻る） */
 function SubmenuItem({ entry, close, keyPrefix }: { entry: Extract<MenuEntry, { submenu: MenuEntry[] }>; close: () => void; keyPrefix: string }) {
   const anchor = useRef<HTMLLIElement>(null)
-  const [open, setOpen] = useState<null | 'mouse' | 'key'>(null)
+  const [open, rawSetOpen] = useState<null | 'mouse' | 'key'>(null)
   const timer = useRef(0)
   const cancelClose = () => window.clearTimeout(timer.current)
+  const siblings = useContext(SiblingContext)
+  // この中のサブメニューどうしの段
+  const children = useMemo(() => ({ current: null as (() => void) | null }), [])
+  const closeNow = useRef(() => {
+    window.clearTimeout(timer.current)
+    rawSetOpen(null)
+  })
+  // 開くときは、同じ段で開いているほかのサブメニューをすぐ閉じる
+  const setOpen = (v: typeof open | ((o: typeof open) => typeof open)) => {
+    rawSetOpen((o) => {
+      const next = typeof v === 'function' ? v(o) : v
+      if (next && siblings.current !== closeNow.current) {
+        const prev = siblings.current
+        siblings.current = closeNow.current
+        if (prev) queueMicrotask(prev)
+      }
+      return next
+    })
+  }
   const closeSoon = () => {
     cancelClose()
     timer.current = window.setTimeout(() => setOpen(null), CLOSE_DELAY_MS)
@@ -95,7 +120,7 @@ function SubmenuItem({ entry, close, keyPrefix }: { entry: Extract<MenuEntry, { 
               }
             }}
           >
-            {renderEntries(entry.submenu, close, `${keyPrefix}s`)}
+            <SiblingContext.Provider value={children}>{renderEntries(entry.submenu, close, `${keyPrefix}s`)}</SiblingContext.Provider>
           </MenuList>
         </Paper>
       </Popper>
