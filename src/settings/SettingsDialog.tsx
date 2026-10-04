@@ -84,9 +84,22 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
   // 選んでいた分類が絞り込みで消えたら、残った最初の分類を出す
   const current = matched.some((c) => c.id === category) ? category : (matched[0]?.id ?? category)
   const parentOf = (id: C) => p.categories.find((c) => c.id === id)?.parent
-  // PC の一覧: サブアイテムは、親かその子を選んでいるときだけ出す（検索中は一致したものをすべて出す）
-  const expanded = parentOf(current) ?? current
-  const shown = query.trim() ? matched : matched.filter((c) => !c.parent || c.parent === expanded)
+  // PC の一覧: サブアイテムは、親を展開しているときだけ出す（検索中は一致したものをすべて出す）。
+  // 選んだ分類の親は自動で展開する
+  const [expanded, setExpanded] = useState<ReadonlySet<C>>(() => new Set())
+  const isOpen = (id: C) => expanded.has(id) || parentOf(current) === id
+  const hasChildren = (id: C) => p.categories.some((c) => c.parent === id)
+  const toggle = (id: C, open = !isOpen(id)) => {
+    setExpanded((s) => {
+      const n = new Set(s)
+      if (open) n.add(id)
+      else n.delete(id)
+      return n
+    })
+    // 選んでいるサブアイテムを畳んだら、親を選ぶ
+    if (!open && parentOf(current) === id) setCategory(id)
+  }
+  const shown = query.trim() ? matched : matched.filter((c) => !c.parent || isOpen(c.parent))
   const shownIds = shown.map((c) => c.id)
   const childrenOf = (id: C) => matched.filter((c) => c.parent === id)
   const [draft, setDraft] = useState(p.settings)
@@ -146,6 +159,19 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
 
   /** 分類の一覧での ↑↓ / Home / End。分類を切り替えて、その項目にフォーカスを移す */
   const moveCategory = (e: React.KeyboardEvent<HTMLElement>) => {
+    // → で展開（展開済みなら最初の子へ）、← で折りたたみ（子なら親へ）。Windows のツリーと同じ
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !query.trim()) {
+      e.preventDefault()
+      const parent = parentOf(current)
+      if (e.key === 'ArrowLeft') {
+        if (parent) setCategory(parent)
+        else if (hasChildren(current)) toggle(current, false)
+      } else if (hasChildren(current)) {
+        if (!isOpen(current)) toggle(current, true)
+        else setCategory(p.categories.find((c) => c.parent === current)!.id)
+      }
+      return
+    }
     const i = shownIds.indexOf(current)
     const next = { ArrowUp: i - 1, ArrowDown: i + 1, Home: 0, End: shownIds.length - 1 }[e.key]
     if (next === undefined || !shownIds.length) return
@@ -208,7 +234,7 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
   const body = (
     <>
       <DialogContent dividers sx={{ display: 'flex', gap: 2, p: 0 }}>
-        {/* ↑↓ で分類を切り替え、Home / End で最初・最後へ（右の項目へは Tab で移る） */}
+        {/* ↑↓ で分類を切り替え、Home / End で最初・最後へ、→ ← で開閉（右の項目へは Tab で移る） */}
         <Box sx={{ width: 180, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ p: 1, pb: 0 }}>{searchField}</Box>
           <List ref={tabListRef} dense role="tablist" aria-orientation="vertical" onKeyDown={moveCategory} sx={{ py: 0.5 }}>
@@ -220,9 +246,29 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
                 selected={c.id === current}
                 // 選ばれている分類だけを Tab で止まる場所にする（ほかへは矢印キーで移る）
                 tabIndex={c.id === current ? 0 : -1}
-                onClick={() => setCategory(c.id)}
-                sx={{ fontSize: 13, pl: c.parent ? 4 : 2 }}
+                aria-expanded={hasChildren(c.id) ? isOpen(c.id) : undefined}
+                // 親を選んだら展開もする
+                onClick={() => {
+                  setCategory(c.id)
+                  if (hasChildren(c.id)) toggle(c.id, true)
+                }}
+                sx={{ fontSize: 13, pl: c.parent ? 4.5 : 0.5, gap: 0.5 }}
               >
+                {/* 子がある分類だけ、押すと開閉する ▶ / ▼（分類の切り替えはしない） */}
+                {!c.parent && (
+                  <Box
+                    component="span"
+                    aria-hidden
+                    onClick={(e) => {
+                      if (!hasChildren(c.id) || query.trim()) return
+                      e.stopPropagation()
+                      toggle(c.id)
+                    }}
+                    sx={{ width: 16, flexShrink: 0, display: 'flex', justifyContent: 'center', opacity: 0.6, visibility: hasChildren(c.id) && !query.trim() ? 'visible' : 'hidden' }}
+                  >
+                    <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: 9, transition: 'transform 0.1s', transform: isOpen(c.id) ? 'rotate(90deg)' : undefined }} />
+                  </Box>
+                )}
                 {c.label}
               </ListItemButton>
             ))}
