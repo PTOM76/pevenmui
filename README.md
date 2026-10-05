@@ -16,7 +16,9 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 | `SearchContext` / `useHighlight` | 設定の検索で一致した項目に色を付ける |
 | `SettingsDialog` | 設定画面の外枠（分類と検索。分類は `parent` でサブアイテムにできる。PC は OK / 適用、スマホはその場で反映） |
 | `AppHeader` / `HeaderIcon` | 上部のバー（PC はメニューバー、スマホは ⋮ メニュー） |
-| `AboutDialog` / `ShortcutsDialog` | このアプリについて、ショートカット一覧 |
+| `AboutDialog` | このアプリについて |
+| `ShortcutsDialog` / `keymapRows` | ショートカットの一覧（`keymapRows` で今の割り当てから行を作る） |
+| `KeymapEditor` / `useShortcuts` / `resolveKeymap` | キーボードショートカットの割り当て。操作の一覧（`KeyAction`）と既定のキーはアプリが渡し、既定から変えたものだけを保存する。`KeymapEditor` は設定のダイアログの中の割り当ての画面、`useShortcuts` は keydown から操作を呼ぶ（入力欄、ダイアログ、メニューの中は扱わない） |
 | `useFileDrop` | ページのどこにドロップしてもファイルを受け取る |
 | `PevenLabels` / `jaLabels` / `enLabels` | 部品の中の文字（キャンセル・適用など）を日本語・英語で切り替える |
 | `useStableFn` | 常に最新の関数を呼ぶ、作り直されない関数（`memo` した部品に渡す） |

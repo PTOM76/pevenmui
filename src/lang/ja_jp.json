@@ -19,5 +19,12 @@
   "updateFailed": "確認に失敗しました（ネットワーク接続を確認してください）",
   "updateNotYet": "新しい版がまだ配信されていません。しばらくしてからもう一度お試しください",
   "jobDetails": "進んでいる処理",
-  "jobCancel": "中断"
+  "jobCancel": "中断",
+  "keyPress": "キーを押してください",
+  "keyNone": "なし",
+  "keyClear": "キーを外す",
+  "keyDefault": "既定に戻す",
+  "keyResetAll": "すべて既定に戻す",
+  "keyTaken": "{key} を「{names}」から外しました",
+  "keyNameSep": "、"
 }

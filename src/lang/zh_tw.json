@@ -19,5 +19,12 @@
   "updateFailed": "檢查失敗（請檢查網路連線）",
   "updateNotYet": "新版本尚未發布，請稍後再試",
   "jobDetails": "進行中的處理",
-  "jobCancel": "中止"
+  "jobCancel": "中止",
+  "keyPress": "請按下按鍵",
+  "keyNone": "無",
+  "keyClear": "移除按鍵",
+  "keyDefault": "恢復預設",
+  "keyResetAll": "全部恢復預設",
+  "keyTaken": "已從「{names}」移除 {key}",
+  "keyNameSep": "、"
 }

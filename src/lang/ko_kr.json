@@ -19,5 +19,12 @@
   "updateFailed": "확인에 실패했습니다 (네트워크 연결을 확인하세요)",
   "updateNotYet": "새 버전이 아직 배포되지 않았습니다. 잠시 후 다시 시도하세요",
   "jobDetails": "진행 중인 작업",
-  "jobCancel": "중단"
+  "jobCancel": "중단",
+  "keyPress": "키를 누르세요",
+  "keyNone": "없음",
+  "keyClear": "키 해제",
+  "keyDefault": "기본값으로",
+  "keyResetAll": "모두 기본값으로",
+  "keyTaken": "{key}를 \"{names}\"에서 해제했습니다",
+  "keyNameSep": ", "
 }

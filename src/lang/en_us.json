@@ -19,5 +19,12 @@
   "updateFailed": "Check failed (please check your network connection)",
   "updateNotYet": "The new version is not available yet. Please try again in a few minutes",
   "jobDetails": "Running tasks",
-  "jobCancel": "Cancel"
+  "jobCancel": "Cancel",
+  "keyPress": "Press a key",
+  "keyNone": "None",
+  "keyClear": "Remove key",
+  "keyDefault": "Reset",
+  "keyResetAll": "Reset all to defaults",
+  "keyTaken": "Removed {key} from \"{names}\"",
+  "keyNameSep": ", "
 }
