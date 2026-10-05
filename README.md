@@ -16,6 +16,8 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 | `SearchContext` / `useHighlight` | 設定の検索で一致した項目に色を付ける |
 | `SettingsDialog` | 設定画面の外枠（分類と検索。分類は `parent` でサブアイテムにできる。PC は OK / 適用、スマホはその場で反映） |
 | `AppHeader` / `HeaderIcon` | 上部のバー（PC はメニューバー、スマホは ⋮ メニュー） |
+| `StatusBar` / `StatusItem` / `StatusButton` / `StatusSpacer` | PC の下の 24px のステータスバーの枠と項目。中身はアプリが並べる |
+| `BottomBar` | スマホの下のバーの枠（安全領域、区切り線、進んでいる処理のゲージ）。中のボタンはアプリが渡す |
 | `AboutDialog` | このアプリについて |
 | `ShortcutsDialog` / `keymapRows` | ショートカットの一覧（`keymapRows` で今の割り当てから行を作る） |
 | `KeymapEditor` / `useShortcuts` / `resolveKeymap` | キーボードショートカットの割り当て。操作の一覧（`KeyAction`）と既定のキーはアプリが渡し、既定から変えたものだけを保存する。`KeymapEditor` は設定のダイアログの中の割り当ての画面、`useShortcuts` は keydown から操作を呼ぶ（入力欄、ダイアログ、メニューの中は扱わない） |

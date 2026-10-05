@@ -21,6 +21,8 @@ export { resolveKeymap, actionKeys, comboOf, actionOf, comboLabel, keyLabelOf, k
 export { LicensesDialog, type LicenseEntry } from './dialog/LicensesDialog'
 export { AppHeader, HeaderIcon, useMobileLayout } from './layout/AppHeader'
 export { OverflowRow } from './layout/OverflowRow'
+export { StatusBar, StatusItem, StatusButton, StatusSpacer } from './layout/StatusBar'
+export { BottomBar } from './layout/BottomBar'
 export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'
 export { useStableFn } from './hooks/useStableFn'
 export { useLeaveGuard } from './hooks/useLeaveGuard'
