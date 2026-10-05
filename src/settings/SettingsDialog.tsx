@@ -44,8 +44,8 @@ interface Props<S, C extends string> {
   categories: SettingsCategory<C>[]
   /** 最初に開く分類（既定は先頭） */
   initial?: C
-  /** 分類ごとの中身。`set` で変えた値は `draft` に入る（PC は OK・適用で反映、スマホはすぐ反映） */
-  pages: (draft: S, set: (patch: Partial<S>) => void) => Record<C, ReactNode>
+  /** 分類ごとの中身。`set` で変えた値は `draft` に入る（PC は OK・適用で反映、スマホはすぐ反映）。`go` で別の分類を開く */
+  pages: (draft: S, set: (patch: Partial<S>) => void, go: (category: C) => void) => Record<C, ReactNode>
   /** PC での出し方（既定は WindowModeContext）。スマホは常に全画面のダイアログ */
   windowMode?: WindowMode
   /** 変わるたびに、別の窓で開いている設定画面を手前に出す（開いたまま、もう一度開こうとしたとき） */
@@ -119,7 +119,13 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
     if (narrow) p.onChange(patch)
   }
   const dirty = (Object.keys(draft) as (keyof S)[]).some((k) => draft[k] !== p.settings[k])
-  const pages = p.pages(draft, set)
+  // 別の分類を開く（中身から、関係する設定へ案内するとき）。検索は解く
+  const go = (c: C) => {
+    setQuery('')
+    setCategory(c)
+    if (narrow) setPage(c)
+  }
+  const pages = p.pages(draft, set, go)
   const label = (id: C) => p.categories.find((c) => c.id === id)?.label ?? id
   const ok = () => {
     p.onChange(draft)
