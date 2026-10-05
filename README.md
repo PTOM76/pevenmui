@@ -26,7 +26,6 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 | `useFilePicker` / `useFilesPicker` / `useRecentFiles` | ファイルを開く画面と、最近使用したファイル（`pevenmui/web` の `fileAccess` を使う） |
 | `usePalette` | 今の配色（ライト / ダーク）のパレットを取り出す（Canvas に描くとき） |
 | `startJob` / `useJobs` / `JobGauge` | 進んでいる処理の一覧と、それを 1 本にまとめたゲージ（押すと一覧と中止） |
-| `LevelMeter` | LED 風のレベルメーター（AnalyserNode のピークを Canvas に描く） |
 | `pevenmui/web` | React を使わない部品。IndexedDB（`createIdb`）、File System Access API（`initFileAccess` / `pickSaveTarget` など）、`isMobile` / `isStandalone`、`downloadBlob`。Worker からも読み込める |
 | `pevenmui/pwa` | 新しい版の通知（`UpdatePrompt`）と確認（`UpdateSection`）。vite-plugin-pwa（registerType: 'prompt'）を使うアプリだけが読み込む |
 
