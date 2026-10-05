@@ -26,5 +26,8 @@
   "keyDefault": "既定に戻す",
   "keyResetAll": "すべて既定に戻す",
   "keyTaken": "{key} を「{names}」から外しました",
-  "keyNameSep": "、"
+  "keyNameSep": "、",
+  "panelCollapse": "たたむ",
+  "panelPin": "固定する",
+  "panelOpen": "欄を開く"
 }

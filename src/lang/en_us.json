@@ -26,5 +26,8 @@
   "keyDefault": "Reset",
   "keyResetAll": "Reset all to defaults",
   "keyTaken": "Removed {key} from \"{names}\"",
-  "keyNameSep": ", "
+  "keyNameSep": ", ",
+  "panelCollapse": "Collapse",
+  "panelPin": "Pin",
+  "panelOpen": "Open panel"
 }

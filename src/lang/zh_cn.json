@@ -26,5 +26,8 @@
   "keyDefault": "恢复默认",
   "keyResetAll": "全部恢复默认",
   "keyTaken": "已从“{names}”移除 {key}",
-  "keyNameSep": "、"
+  "keyNameSep": "、",
+  "panelCollapse": "折叠",
+  "panelPin": "固定",
+  "panelOpen": "打开面板"
 }

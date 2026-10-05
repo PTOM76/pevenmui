@@ -26,5 +26,8 @@
   "keyDefault": "기본값으로",
   "keyResetAll": "모두 기본값으로",
   "keyTaken": "{key}를 \"{names}\"에서 해제했습니다",
-  "keyNameSep": ", "
+  "keyNameSep": ", ",
+  "panelCollapse": "접기",
+  "panelPin": "고정",
+  "panelOpen": "패널 열기"
 }

@@ -17,6 +17,7 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 | `SettingsDialog` | 設定画面の外枠（分類と検索。分類は `parent` でサブアイテムにできる。PC は OK / 適用、スマホはその場で反映） |
 | `AppHeader` / `HeaderIcon` | 上部のバー（PC はメニューバー、スマホは ⋮ メニュー） |
 | `StatusBar` / `StatusItem` / `StatusButton` / `StatusSpacer` | PC の下の 24px のステータスバーの枠と項目。中身はアプリが並べる |
+| `DesktopLayout` / `MobileLayout` | 画面の配置。PC はツールバー / 編集領域＋右のインスペクタ（幅を変えられる） / ステータスバー。スマホは編集領域 / 表示ツール / タブとパネル / 下のバー（横向きでは右の欄をたためる）。幅と固定は `storageKey` で覚える |
 | `BottomBar` | スマホの下のバーの枠（安全領域、区切り線、進んでいる処理のゲージ）。中のボタンはアプリが渡す |
 | `AboutDialog` | このアプリについて |
 | `ShortcutsDialog` / `keymapRows` | ショートカットの一覧（`keymapRows` で今の割り当てから行を作る） |
