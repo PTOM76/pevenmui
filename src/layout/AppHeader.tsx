@@ -9,6 +9,7 @@ import MenuBar from '../menu/MenuBar'
 import type { MenuGroup } from '../menu/MenuList'
 import { LANDSCAPE_PHONE } from '../theme'
 import { pevenTokens } from '../tokens'
+import { useApp } from '../appContext'
 
 /** 上部のバーに置くアイコンボタン（無効時もツールチップを出すため span で包む）。PC では `small` にする */
 export function HeaderIcon(p: { title: string; icon: IconDefinition; disabled?: boolean; small?: boolean; onClick: () => void }) {
@@ -56,8 +57,11 @@ export function useMobileLayout() {
 /**
  * 上部のバー。PC は Windows 風の低いメニューバー、スマホは Android 風の上部バー（メニューは ⋮ にまとめる）。
  * `actions` は右端に並べるもの。PC とスマホでボタンの大きさを変えるため、スマホかどうかを受け取って返す
+ * `title` を省略すると、PevenProvider に渡したアプリの名前
  */
-export function AppHeader(p: { title: string; icon: ReactNode; menus: MenuGroup[]; actions?: (mobile: boolean) => ReactNode }) {
+export function AppHeader(p: { title?: string; icon: ReactNode; menus: MenuGroup[]; actions?: (mobile: boolean) => ReactNode }) {
+  const app = useApp()
+  const title = p.title ?? app?.name
   const mobile = useMobileLayout()
   const standalone = useMediaQuery('(display-mode: standalone), (display-mode: window-controls-overlay)')
   const landscape = useMediaQuery(LANDSCAPE_PHONE)
@@ -68,7 +72,7 @@ export function AppHeader(p: { title: string; icon: ReactNode; menus: MenuGroup[
         {/* 横向きは高さが足りないので低くする */}
         <Toolbar sx={{ minHeight: `${landscape ? 44 : 56}px !important`, gap: 0.5 }}>
           <Typography variant="h6" sx={{ flexGrow: 1, fontSize: landscape ? 18 : 22, fontWeight: 400 }} noWrap>
-            {p.title}
+            {title}
           </Typography>
           {p.actions?.(true)}
           <OverflowMenu menus={p.menus} />

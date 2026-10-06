@@ -1,5 +1,9 @@
 // PevenMUI（Pitan Seven Material UI）: MUI をもとにした、デスクトップアプリ風の操作感の UI 部品
 
+// ---- アプリの定義 ----
+export { defineApp, htmlLangOf, ogLocaleOf, type App, type AppInfo } from './app'
+export { AppContext, useApp } from './appContext'
+
 // ---- テーマ、寸法、画面幅 ----
 export { PevenProvider, DESKTOP_QUERY, useDesktop, preventPageZoom } from './PevenProvider'
 export { createPevenTheme, desktopStyles, LANDSCAPE_PHONE, type PevenThemeOptions } from './theme'

@@ -1,5 +1,6 @@
 // React や MUI を使わない部品（Worker からも読み込める）
 export { createIdb, type Idb } from './idb'
+export { defineApp, type App, type AppInfo } from '../app'
 export { isMobile, isStandalone } from './env'
 export { downloadBlob } from './download'
 export {

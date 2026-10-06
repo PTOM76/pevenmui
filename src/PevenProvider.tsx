@@ -3,6 +3,8 @@ import { CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material'
 import { createPevenTheme, desktopStyles, type PevenThemeOptions } from './theme'
 import type { I18n } from './i18n'
 import { PevenLabels } from './labels'
+import type { App } from './app'
+import { AppContext } from './appContext'
 
 /** PC とスマホの境目（MUI の md） */
 export const DESKTOP_QUERY = '(min-width: 900px)'
@@ -22,9 +24,10 @@ export function useDesktop() {
 /**
  * 画面幅に合わせて PC 用 / スマホ用のテーマを切り替えて当てる。
  * `desktopLook` を付けると、PC のときデスクトップアプリらしい見た目（desktopStyles）も当てる。
- * `i18n` と `lang` を渡すと、アプリの文字と部品の文字をその言語に切り替える
+ * `i18n` と `lang` を渡すと、アプリの文字と部品の文字をその言語に切り替える。
+ * `app`（defineApp）を渡すと、AppHeader と AboutDialog の名前を省略できる
  */
-export function PevenProvider<L extends string>(p: { children: ReactNode; theme?: PevenThemeOptions; desktopLook?: boolean; i18n?: Pick<I18n, 'setLang' | 'labels'> & { LangContext: Context<L> }; lang?: L }) {
+export function PevenProvider<L extends string>(p: { children: ReactNode; theme?: PevenThemeOptions; app?: App; desktopLook?: boolean; i18n?: Pick<I18n, 'setLang' | 'labels'> & { LangContext: Context<L> }; lang?: L }) {
   const desktop = useDesktop()
   const theme = useMemo(() => createPevenTheme(desktop, p.theme), [desktop, p.theme])
   let children = p.children
@@ -38,6 +41,7 @@ export function PevenProvider<L extends string>(p: { children: ReactNode; theme?
       </LangContext.Provider>
     )
   }
+  if (p.app) children = <AppContext.Provider value={p.app}>{children}</AppContext.Provider>
   return (
     <ThemeProvider theme={theme} defaultMode="system">
       <CssBaseline />

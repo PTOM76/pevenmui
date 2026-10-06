@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
-import { HTML_LANG, LABELS, LANG_NAMES, type Labels } from './labels'
+import { LABELS, LANG_NAMES, type Labels } from './labels'
+import { htmlLangOf } from './app'
 
 type Dict = Record<string, string>
 
@@ -7,13 +8,7 @@ type Dict = Record<string, string>
 const format = (text: string, vars?: Record<string, string | number>) =>
   vars ? text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : text
 
-/** ja_jp → ja-JP（PevenMUI が知っている言語は今までの値） */
-function toHtmlLang(lang: string) {
-  const known = (HTML_LANG as Record<string, string>)[lang]
-  if (known) return known
-  const [l, r] = lang.split('_')
-  return r ? `${l}-${r.toUpperCase()}` : l
-}
+const toHtmlLang = htmlLangOf
 
 /** 言語の自称（PevenMUI が知らない言語は Intl.DisplayNames で作る） */
 function nativeName(lang: string) {
