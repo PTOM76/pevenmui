@@ -1,38 +1,56 @@
 // PevenMUI（Pitan Seven Material UI）: MUI をもとにした、デスクトップアプリ風の操作感の UI 部品
+
+// ---- テーマ、寸法、画面幅 ----
+export { PevenProvider, DESKTOP_QUERY, useDesktop, preventPageZoom } from './PevenProvider'
 export { createPevenTheme, desktopStyles, LANDSCAPE_PHONE, type PevenThemeOptions } from './theme'
 export { PEVEN_TOKENS, pevenTokens, type PevenTokens, type PevenTokensOptions } from './tokens'
-export { PevenProvider, DESKTOP_QUERY, useDesktop, preventPageZoom } from './PevenProvider'
-export { enterToSubmit } from './dialog/enterToSubmit'
-export { useConfirm, type ConfirmRequest } from './dialog/ConfirmDialog'
-export { usePersistentNumber, usePanelWidth } from './layout/Splitter'
+export { setUiScale, getUiScale, canvasPixelRatio, localPoint, FULL_HEIGHT, vh, vw } from './uiScale'
+export { usePalette } from './hooks/usePalette'
+
+// ---- 多言語化 ----
+export { createI18n, type I18n, type I18nOptions } from './i18n'
+export { PevenLabels, useLabels, jaLabels, enLabels, koLabels, zhCnLabels, zhTwLabels, type Labels } from './labels'
+// 古い API（5 言語に固定）。新しいアプリは createI18n を使う
+export { LABELS, LANG_NAMES, HTML_LANG, detectLang, type PevenLang } from './labels'
+
+// ---- メニュー ----
 export { default as MenuBar, BAR_TEXT_SX } from './menu/MenuBar'
 export { renderEntries, flattenEntries, ContextMenu, type MenuEntry, type MenuGroup } from './menu/MenuList'
 export { DrillMenu } from './menu/DrillMenu'
-export { NarrowContext, Group, Row, Choice, Check } from './settings/controls'
-export { SearchContext, matches, useHighlight, useHighlighter } from './settings/search'
-export { createI18n, type I18n, type I18nOptions } from './i18n'
-export { PevenLabels, useLabels, jaLabels, enLabels, koLabels, zhCnLabels, zhTwLabels, LABELS, LANG_NAMES, HTML_LANG, detectLang, type Labels, type PevenLang } from './labels'
-export { SettingsDialog, matchCategories, type SettingsCategory } from './settings/SettingsDialog'
-export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPortal'
-export { WindowDialog, WindowModeContext } from './window/WindowDialog'
-export { AboutDialog } from './dialog/AboutDialog'
-export { ShortcutsDialog } from './keymap/ShortcutsDialog'
-export { KeymapEditor } from './keymap/KeymapEditor'
-export { useShortcuts, type ShortcutHandlers } from './keymap/useShortcuts'
-export { resolveKeymap, actionKeys, comboOf, actionOf, comboLabel, keyLabelOf, keymapRows, type KeyAction, type Keymap, type KeymapOverrides, type DefaultKeys } from './keymap/keymap'
-export { LicensesDialog, type LicenseEntry } from './dialog/LicensesDialog'
+
+// ---- 画面の配置 ----
 export { AppHeader, HeaderIcon, useMobileLayout } from './layout/AppHeader'
 export { OverflowRow } from './layout/OverflowRow'
 export { StatusBar, StatusItem, StatusButton, StatusSpacer } from './layout/StatusBar'
 export { BottomBar } from './layout/BottomBar'
 export { DesktopLayout } from './layout/DesktopLayout'
 export { MobileLayout, type MobileTab } from './layout/MobileLayout'
+export { usePersistentNumber, usePanelWidth } from './layout/Splitter'
+
+// ---- 設定 ----
+export { SettingsDialog, matchCategories, type SettingsCategory } from './settings/SettingsDialog'
+export { NarrowContext, Group, Row, Choice, Check } from './settings/controls'
+export { SearchContext, matches, useHighlight, useHighlighter } from './settings/search'
+
+// ---- キーボードショートカット ----
+export { KeymapEditor } from './keymap/KeymapEditor'
+export { ShortcutsDialog } from './keymap/ShortcutsDialog'
+export { useShortcuts, type ShortcutHandlers } from './keymap/useShortcuts'
+export { resolveKeymap, actionKeys, comboOf, actionOf, comboLabel, keyLabelOf, keymapRows, type KeyAction, type Keymap, type KeymapOverrides, type DefaultKeys } from './keymap/keymap'
+
+// ---- ダイアログ、別ウィンドウ ----
+export { useConfirm, type ConfirmRequest } from './dialog/ConfirmDialog'
+export { enterToSubmit } from './dialog/enterToSubmit'
+export { AboutDialog } from './dialog/AboutDialog'
+export { LicensesDialog, type LicenseEntry } from './dialog/LicensesDialog'
+export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPortal'
+export { WindowDialog, WindowModeContext } from './window/WindowDialog'
+
+// ---- ファイル、処理の進み具合、そのほか ----
 export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'
-export { useStableFn } from './hooks/useStableFn'
-export { useLeaveGuard } from './hooks/useLeaveGuard'
 export { useFilePicker, useFilesPicker } from './hooks/useFilePicker'
 export { useRecentFiles } from './hooks/useRecentFiles'
-export { usePalette } from './hooks/usePalette'
+export { useLeaveGuard } from './hooks/useLeaveGuard'
+export { useStableFn } from './hooks/useStableFn'
 export { useJobs, startJob, type Job } from './progress/jobs'
 export { JobGauge } from './progress/JobGauge'
-export { setUiScale, getUiScale, canvasPixelRatio, localPoint, FULL_HEIGHT, vh, vw } from './uiScale'

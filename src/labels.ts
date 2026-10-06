@@ -13,12 +13,13 @@ export const koLabels: Labels = ko
 export const zhCnLabels: Labels = zhCn
 export const zhTwLabels: Labels = zhTw
 
-/** PevenMUI が訳を持つ言語（Minecraft 風の名前）。アプリの対応言語は createI18n で決める */
+/** PevenMUI が訳を持つ言語（Minecraft 風の名前）。 @deprecated 対応言語は createI18n で決める */
 export type PevenLang = 'ja_jp' | 'en_us' | 'ko_kr' | 'zh_cn' | 'zh_tw'
 
+/** 言語ごとの部品の文字。 @deprecated `i18n.labels(lang)` を使う */
 export const LABELS: Record<PevenLang, Labels> = { ja_jp: jaLabels, en_us: enLabels, ko_kr: koLabels, zh_cn: zhCnLabels, zh_tw: zhTwLabels }
 
-/** 設定の言語選択肢（各言語の自称） */
+/** 設定の言語選択肢（各言語の自称）。 @deprecated `i18n.options()` を使う */
 export const LANG_NAMES: [PevenLang, string][] = [
   ['ja_jp', '日本語'],
   ['en_us', 'English'],
@@ -27,7 +28,7 @@ export const LANG_NAMES: [PevenLang, string][] = [
   ['zh_tw', '繁體中文'],
 ]
 
-/** ブラウザの言語から選ぶ。繁体字は台湾・香港・マカオと zh-Hant */
+/** ブラウザの言語から選ぶ。繁体字は台湾・香港・マカオと zh-Hant。 @deprecated `i18n.detect()` を使う */
 export function detectLang(): PevenLang {
   const l = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : 'ja'
   if (l.startsWith('ja')) return 'ja_jp'
@@ -36,7 +37,7 @@ export function detectLang(): PevenLang {
   return 'en_us'
 }
 
-/** `<html lang>` に入れる値 */
+/** `<html lang>` に入れる値。 @deprecated `i18n.htmlLang(lang)` を使う */
 export const HTML_LANG: Record<PevenLang, string> = { ja_jp: 'ja', en_us: 'en', ko_kr: 'ko', zh_cn: 'zh-CN', zh_tw: 'zh-TW' }
 
 /** 部品の文字。既定は日本語 */
