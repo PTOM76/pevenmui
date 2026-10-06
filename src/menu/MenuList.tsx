@@ -161,7 +161,8 @@ export function renderEntries(entries: MenuEntry[], close: () => void, keyPrefix
         }}
       >
         {e.checked !== undefined && (
-          <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden', fontSize: (t) => pevenTokens(t).menu.checkSize }}>
+          // MUI の dense の MenuItem が svg に 1.25rem を当てるので、クラスを重ねて詳細度で上回る
+          <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden', '&&& svg': { fontSize: (t) => pevenTokens(t).menu.checkSize } }}>
             <FontAwesomeIcon icon={faCheck} />
           </ListItemIcon>
         )}
