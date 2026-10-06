@@ -1,0 +1,3 @@
+[submodule "template-app"]
+	path = template-app
+	url = https://github.com/PTOM76/pevenmui-template-app.git
