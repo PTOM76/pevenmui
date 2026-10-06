@@ -5,6 +5,13 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 
 ## 含まれるもの
 
+### アプリの定義
+
+| 部品 | 内容 |
+| --- | --- |
+| `defineApp` / `useApp` | アプリの名前、id、URL、既定の言語をまとめる。保存のキー（`app.key('settings')`）も作る。`PevenProvider app` に渡すと、AppHeader と AboutDialog の名前を省略できる |
+| `pevenmui/vite` の `pevenApp` / `pevenManifest` | アプリの定義をビルドに渡す（版、index.html の名前と言語、version.json、PWA の manifest の名前と言語） |
+
 ### テーマ、寸法、画面幅
 
 | 部品 | 内容 |
@@ -94,6 +101,42 @@ createRoot(root).render(
 `pevenmui/web` と `pevenmui/pwa` も同じように、それぞれ `src/web/index.ts` と `src/pwa/index.ts` に向ける。
 
 色などは `theme` に MUI の ThemeOptions を渡して上書きできる。フォント（Roboto）はアプリ側で読み込む。
+
+### アプリの定義
+
+名前などは 1 つのファイルにまとめ、画面と vite.config.ts の両方から読み込む。vite.config.ts からも読めるよう、このファイルは何も import しない。
+
+```ts
+// src/appInfo.ts
+export const APP_INFO = {
+  id: 'myapp',                       // 保存のキーの接頭辞。変えると保存済みの設定が読めなくなる
+  name: 'MyApp',
+  repository: 'https://github.com/you/myapp',
+  site: 'https://myapp.example.com/', // OGP の絶対 URL（ビルド時は SITE_URL が優先）
+  lang: 'en_us',                      // <html lang> と og:locale
+}
+
+// src/appConfig.ts（画面から使う。pevenmui/web なので Worker からも読み込める）
+import { defineApp } from 'pevenmui/web'
+export const app = defineApp(APP_INFO)
+app.key('settings') // 'myapp.settings'
+```
+
+```ts
+// vite.config.ts
+import { pevenApp, pevenManifest } from './pevenmui/src/vite.ts'
+import { APP_INFO } from './src/appInfo.ts'
+
+plugins: [
+  pevenApp(APP_INFO, { version: pkg.version }),
+  // PWA を使うときだけ
+  VitePWA({ manifest: { ...pevenManifest(APP_INFO), icons: [...] } }),
+]
+```
+
+- index.html の `%APP_NAME%`、`%APP_SHORT_NAME%`、`%APP_DESCRIPTION%`、`%APP_LANG%`、`%APP_LOCALE%`、`%SITE_URL%` をビルド時に置き換える
+- `__APP_VERSION__` と `__APP_COMMIT__`（コミットの短いハッシュ）を定義し、version.json を書き出す（`pevenmui/pwa` の更新の確認が読む）
+- `pevenmui/src/vite.ts` は Node が型を取り除いてそのまま読める書き方にしてある。pevenmui の場所が実行時に決まるときは `await import(pathToFileURL(...).href)` で読み込める
 
 ### 多言語化
 
