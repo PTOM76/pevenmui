@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState, type Context, type ReactNode } from 'react'
 import { CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material'
 import { createPevenTheme, desktopStyles, type PevenThemeOptions } from './theme'
-import type { I18n } from './i18n'
-import { PevenLabels } from './labels'
+import { PevenLabels, type Labels } from './labels'
 import type { App } from './app'
 import { AppContext } from './appContext'
 
@@ -27,7 +26,7 @@ export function useDesktop() {
  * `i18n` と `lang` を渡すと、アプリの文字と部品の文字をその言語に切り替える。
  * `app`（defineApp）を渡すと、AppHeader と AboutDialog の名前を省略できる
  */
-export function PevenProvider<L extends string>(p: { children: ReactNode; theme?: PevenThemeOptions; app?: App; desktopLook?: boolean; i18n?: Pick<I18n, 'setLang' | 'labels'> & { LangContext: Context<L> }; lang?: L }) {
+export function PevenProvider<L extends string>(p: { children: ReactNode; theme?: PevenThemeOptions; app?: App; desktopLook?: boolean; i18n?: { setLang: (lang: L) => void; labels: (lang: L) => Labels; LangContext: Context<L> }; lang?: L }) {
   const desktop = useDesktop()
   const theme = useMemo(() => createPevenTheme(desktop, p.theme), [desktop, p.theme])
   let children = p.children
