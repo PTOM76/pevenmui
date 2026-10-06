@@ -8,6 +8,7 @@ import { useLabels } from '../labels'
 import MenuBar from '../menu/MenuBar'
 import type { MenuGroup } from '../menu/MenuList'
 import { LANDSCAPE_PHONE } from '../theme'
+import { pevenTokens } from '../tokens'
 
 /** 上部のバーに置くアイコンボタン（無効時もツールチップを出すため span で包む）。PC では `small` にする */
 export function HeaderIcon(p: { title: string; icon: IconDefinition; disabled?: boolean; small?: boolean; onClick: () => void }) {
@@ -78,7 +79,7 @@ export function AppHeader(p: { title: string; icon: ReactNode; menus: MenuGroup[
 
   return (
     <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-      <Toolbar disableGutters sx={{ minHeight: '32px !important', height: 32, px: 1, gap: 0.25 }}>
+      <Toolbar disableGutters sx={{ minHeight: (t) => `${pevenTokens(t).header.height}px !important`, height: (t) => pevenTokens(t).header.height, px: 1, gap: 0.25 }}>
         {/* PWA としてインストールして開いたときは、ウィンドウのタイトルバーにアイコンが出るので出さない */}
         {!standalone && (
           <Box component="span" sx={{ display: 'flex', mx: 0.75 }}>

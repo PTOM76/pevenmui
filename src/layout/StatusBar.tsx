@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { Box, ButtonBase, Stack, Tooltip, type SxProps, type Theme } from '@mui/material'
+import { pevenTokens } from '../tokens'
 
 const ITEM_SX = { px: 1, height: '100%', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', lineHeight: 'inherit' } as const
 
 /**
- * PC 用のステータスバー（高さ 24px）の枠。常に見えていてほしいが、場所は取りたくない情報を並べる。
+ * PC 用のステータスバー（高さはテーマの `peven.statusBar`、既定は 24px）の枠。常に見えていてほしいが、場所は取りたくない情報を並べる。
  * 中身は `StatusItem`、`StatusButton`、`StatusSpacer` などをアプリが並べる
  */
 export function StatusBar({ children }: { children: ReactNode }) {
@@ -12,7 +13,7 @@ export function StatusBar({ children }: { children: ReactNode }) {
     <Stack
       direction="row"
       // 行の高さを固定し、英字と日本語のフォントが混ざっても文字の高さがそろうようにする
-      sx={{ height: 24, lineHeight: '23px', fontSize: 12, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', alignItems: 'center' }}
+      sx={{ height: (t) => pevenTokens(t).statusBar.height, lineHeight: (t) => `${pevenTokens(t).statusBar.height - 1}px`, fontSize: (t) => pevenTokens(t).statusBar.fontSize, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', alignItems: 'center' }}
     >
       {children}
     </Stack>
@@ -30,7 +31,7 @@ export function StatusButton({ children, title, disabled, onClick, maxWidth = 28
     <ButtonBase
       disabled={disabled}
       onClick={onClick}
-      sx={{ ...ITEM_SX, maxWidth, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', fontFamily: 'inherit', fontSize: 12, '&:hover': { bgcolor: 'action.hover' } }}
+      sx={{ ...ITEM_SX, maxWidth, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', fontFamily: 'inherit', fontSize: 'inherit', '&:hover': { bgcolor: 'action.hover' } }}
     >
       {children}
     </ButtonBase>

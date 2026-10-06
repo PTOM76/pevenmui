@@ -20,6 +20,7 @@ import { faArrowLeft, faChevronRight, faMagnifyingGlass } from '@fortawesome/fre
 import { enterToSubmit } from '../dialog/enterToSubmit'
 import { useLabels } from '../labels'
 import { NarrowContext } from './controls'
+import { pevenTokens } from '../tokens'
 import { matches, SearchContext } from './search'
 import { WindowPortal, type WindowMode } from '../window/WindowPortal'
 import { WindowModeContext } from '../window/WindowDialog'
@@ -241,7 +242,7 @@ export function SettingsDialog<S extends object, C extends string>(p: Props<S, C
     <>
       <DialogContent dividers sx={{ display: 'flex', gap: 2, p: 0 }}>
         {/* ↑↓ で分類を切り替え、Home / End で最初・最後へ、→ ← で開閉（右の項目へは Tab で移る） */}
-        <Box sx={{ width: 180, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ width: (t) => pevenTokens(t).settings.navWidth, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ p: 1, pb: 0 }}>{searchField}</Box>
           <List ref={tabListRef} dense role="tablist" aria-orientation="vertical" onKeyDown={moveCategory} sx={{ py: 0.5 }}>
             {shown.map((c) => (

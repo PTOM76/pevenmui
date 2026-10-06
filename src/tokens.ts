@@ -14,6 +14,20 @@ export const PEVEN_TOKENS = {
     /** サブメニューの矢印の大きさ */
     arrowSize: 10,
   },
+  /** PC の上のバー（AppHeader） */
+  header: {
+    height: 32,
+  },
+  /** PC の下のステータスバー */
+  statusBar: {
+    height: 24,
+    fontSize: 12,
+  },
+  /** 設定のダイアログ（PC） */
+  settings: {
+    /** 左の分類の一覧の幅 */
+    navWidth: 180,
+  },
 }
 
 export type PevenTokens = typeof PEVEN_TOKENS
