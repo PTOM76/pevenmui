@@ -33,7 +33,7 @@ export function DrillMenu({ entries, onClose }: { entries: MenuEntry[]; onClose:
       >
         {e.checked !== undefined && (
           <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden' }}>
-            <FontAwesomeIcon icon={faCheck} />
+            <FontAwesomeIcon icon={faCheck} style={{ fontSize: 12 }} />
           </ListItemIcon>
         )}
         <ListItemText>{e.label}</ListItemText>

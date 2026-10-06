@@ -159,7 +159,7 @@ export function renderEntries(entries: MenuEntry[], close: () => void, keyPrefix
       >
         {e.checked !== undefined && (
           <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden' }}>
-            <FontAwesomeIcon icon={faCheck} />
+            <FontAwesomeIcon icon={faCheck} style={{ fontSize: 12 }} />
           </ListItemIcon>
         )}
         <ListItemText>{e.label}</ListItemText>
