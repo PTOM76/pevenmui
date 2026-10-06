@@ -1,5 +1,6 @@
 // PevenMUI（Pitan Seven Material UI）: MUI をもとにした、デスクトップアプリ風の操作感の UI 部品
-export { createPevenTheme, desktopStyles, LANDSCAPE_PHONE } from './theme'
+export { createPevenTheme, desktopStyles, LANDSCAPE_PHONE, type PevenThemeOptions } from './theme'
+export { PEVEN_TOKENS, pevenTokens, type PevenTokens, type PevenTokensOptions } from './tokens'
 export { PevenProvider, DESKTOP_QUERY, useDesktop, preventPageZoom } from './PevenProvider'
 export { enterToSubmit } from './dialog/enterToSubmit'
 export { useConfirm, type ConfirmRequest } from './dialog/ConfirmDialog'

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ButtonBase, ClickAwayListener, MenuList, Paper, Popper } from '@mui/material'
+import { pevenTokens } from '../tokens'
 import { MENU_MAX_HEIGHT, renderEntries, type MenuGroup } from './MenuList'
 
 /**
- * メニューバーの文字の並べ方。英字（Roboto）と日本語（システムのフォント）では文字の上下の余白が
+ * メニューバーの文字の並べ方（既定の寸法。部品はテーマの `peven.menu` を使う）。英字（Roboto）と日本語（システムのフォント）では文字の上下の余白が
  * 違うため、行の高さを固定して縦方向の中央にそろえ、フォントが混ざっても高さがずれないようにする
  */
 export const BAR_TEXT_SX = {
@@ -152,6 +153,9 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
             onBlur={() => setFocus((f) => (f === index && open === null ? null : f))}
             sx={{
               ...BAR_TEXT_SX,
+              height: (t) => pevenTokens(t).menu.barHeight,
+              lineHeight: (t) => `${pevenTokens(t).menu.barHeight}px`,
+              fontSize: (t) => pevenTokens(t).menu.barFontSize,
               px: 1.25,
               borderRadius: 0.5,
               bgcolor: open === index ? 'action.selected' : focus === index ? 'action.focus' : undefined,
@@ -168,7 +172,7 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
           placement="bottom-start"
           sx={{ zIndex: 'modal' }}
         >
-          <Paper elevation={4} sx={{ minWidth: 240, mt: 0.25, maxHeight: MENU_MAX_HEIGHT, overflowY: 'auto' }}>
+          <Paper elevation={4} sx={{ minWidth: (t) => pevenTokens(t).menu.minWidth, mt: 0.25, maxHeight: MENU_MAX_HEIGHT, overflowY: 'auto' }}>
             <MenuList dense autoFocusItem sx={{ py: 0.5 }} onKeyDown={onMenuKey}>
               {open !== null && renderEntries(menus[open].entries, close)}
             </MenuList>

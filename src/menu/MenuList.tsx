@@ -1,7 +1,8 @@
 import { DrillMenu } from './DrillMenu'
 import { vh } from '../uiScale'
 import { createContext, useContext, useMemo, useRef, useState } from 'react'
-import { Divider, ListItemIcon, ListItemText, Menu, MenuItem, MenuList, Paper, Popper, Typography } from '@mui/material'
+import { Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, MenuList, Paper, Popper, Typography } from '@mui/material'
+import { pevenTokens } from '../tokens'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 
@@ -96,7 +97,9 @@ function SubmenuItem({ entry, close, keyPrefix }: { entry: Extract<MenuEntry, { 
         }}
       >
         <ListItemText>{entry.label}</ListItemText>
-        <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: 24, fontSize: 10, opacity: 0.7 }} />
+        <Box component="span" sx={{ ml: 3, fontSize: (t) => pevenTokens(t).menu.arrowSize, opacity: 0.7, display: 'inline-flex' }}>
+          <FontAwesomeIcon icon={faChevronRight} />
+        </Box>
       </MenuItem>
       <Popper
         open={!!open}
@@ -107,7 +110,7 @@ function SubmenuItem({ entry, close, keyPrefix }: { entry: Extract<MenuEntry, { 
         popperOptions={{ strategy: 'fixed' }}
         sx={{ zIndex: 'modal' }}
       >
-        <Paper elevation={4} sx={{ minWidth: 200, maxHeight: MENU_MAX_HEIGHT, overflowY: 'auto' }} onMouseEnter={cancelClose} onMouseLeave={closeSoon}>
+        <Paper elevation={4} sx={{ minWidth: (t) => pevenTokens(t).menu.submenuMinWidth, maxHeight: MENU_MAX_HEIGHT, overflowY: 'auto' }} onMouseEnter={cancelClose} onMouseLeave={closeSoon}>
           <MenuList
             dense
             autoFocusItem={open === 'key'}
@@ -158,8 +161,8 @@ export function renderEntries(entries: MenuEntry[], close: () => void, keyPrefix
         }}
       >
         {e.checked !== undefined && (
-          <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden' }}>
-            <FontAwesomeIcon icon={faCheck} style={{ fontSize: 12 }} />
+          <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden', fontSize: (t) => pevenTokens(t).menu.checkSize }}>
+            <FontAwesomeIcon icon={faCheck} />
           </ListItemIcon>
         )}
         <ListItemText>{e.label}</ListItemText>

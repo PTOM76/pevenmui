@@ -1,4 +1,8 @@
 import { createTheme, type ThemeOptions } from '@mui/material'
+import { PEVEN_TOKENS, type PevenTokensOptions } from './tokens'
+
+/** MUI の ThemeOptions に、PevenMUI の寸法（`peven`）を足したもの */
+export type PevenThemeOptions = ThemeOptions & { peven?: PevenTokensOptions }
 
 /** メニュー・ダイアログ類の開閉アニメーションの長さ（PC 用。ツールでは待たされる感じが重さになるため短くする） */
 const DESKTOP_TRANSITIONS = {
@@ -11,9 +15,9 @@ const DESKTOP_TRANSITIONS = {
  * Google 製品寄りの Material Design テーマ。角丸は控えめ（4px）にして、ツールらしい落ち着いた見た目にする。
  * `desktop` のときだけ開閉アニメーションを短くする（スマホは Android の標準の動きのままにする）。
  * ライト/ダークは設定で切り替えられるよう、OS の設定ではなく html のクラスで切り替える。
- * `overrides` はアプリごとの上書き（色など）。MUI の createTheme と同じく深くマージする
+ * `overrides` はアプリごとの上書き（色、`peven` の寸法など）。MUI の createTheme と同じく深くマージする
  */
-export const createPevenTheme = (desktop: boolean, overrides: ThemeOptions = {}) => createTheme({
+export const createPevenTheme = (desktop: boolean, overrides: PevenThemeOptions = {}) => createTheme({
   cssVariables: { colorSchemeSelector: 'class' },
   colorSchemes: {
     light: {
@@ -92,6 +96,8 @@ export const createPevenTheme = (desktop: boolean, overrides: ThemeOptions = {})
       },
     },
   },
+  // MUI は知らないキーもそのまま深くマージして theme に残す
+  ...({ peven: PEVEN_TOKENS } as ThemeOptions),
 }, overrides)
 
 /**

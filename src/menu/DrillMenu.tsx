@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Divider, ListItemIcon, ListItemText, MenuItem } from '@mui/material'
+import { Box, Divider, ListItemIcon, ListItemText, MenuItem } from '@mui/material'
+import { pevenTokens } from '../tokens'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import type { MenuEntry } from './MenuList'
@@ -20,7 +21,9 @@ export function DrillMenu({ entries, onClose }: { entries: MenuEntry[]; onClose:
     ) : 'submenu' in e ? (
       <MenuItem key={i} disabled={e.disabled} onClick={() => setStack([...stack, { label: e.label, entries: e.submenu }])}>
         <ListItemText>{e.label}</ListItemText>
-        <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: 24, fontSize: 11, opacity: 0.6 }} />
+        <Box component="span" sx={{ ml: 3, fontSize: (t) => pevenTokens(t).menu.arrowSize + 1, opacity: 0.6, display: 'inline-flex' }}>
+          <FontAwesomeIcon icon={faChevronRight} />
+        </Box>
       </MenuItem>
     ) : (
       <MenuItem
@@ -32,8 +35,8 @@ export function DrillMenu({ entries, onClose }: { entries: MenuEntry[]; onClose:
         }}
       >
         {e.checked !== undefined && (
-          <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden' }}>
-            <FontAwesomeIcon icon={faCheck} style={{ fontSize: 12 }} />
+          <ListItemIcon sx={{ visibility: e.checked ? 'visible' : 'hidden', fontSize: (t) => pevenTokens(t).menu.checkSize }}>
+            <FontAwesomeIcon icon={faCheck} />
           </ListItemIcon>
         )}
         <ListItemText>{e.label}</ListItemText>
