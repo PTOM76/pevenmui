@@ -9,6 +9,7 @@ export { renderEntries, flattenEntries, ContextMenu, type MenuEntry, type MenuGr
 export { DrillMenu } from './menu/DrillMenu'
 export { NarrowContext, Group, Row, Choice, Check } from './settings/controls'
 export { SearchContext, matches, useHighlight, useHighlighter } from './settings/search'
+export { createI18n, type I18n, type I18nOptions } from './i18n'
 export { PevenLabels, useLabels, jaLabels, enLabels, koLabels, zhCnLabels, zhTwLabels, LABELS, LANG_NAMES, HTML_LANG, detectLang, type Labels, type PevenLang } from './labels'
 export { SettingsDialog, matchCategories, type SettingsCategory } from './settings/SettingsDialog'
 export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPortal'

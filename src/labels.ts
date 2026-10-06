@@ -13,7 +13,7 @@ export const koLabels: Labels = ko
 export const zhCnLabels: Labels = zhCn
 export const zhTwLabels: Labels = zhTw
 
-/** 対応言語（Minecraft 風の名前） */
+/** PevenMUI が訳を持つ言語（Minecraft 風の名前）。アプリの対応言語は createI18n で決める */
 export type PevenLang = 'ja_jp' | 'en_us' | 'ko_kr' | 'zh_cn' | 'zh_tw'
 
 export const LABELS: Record<PevenLang, Labels> = { ja_jp: jaLabels, en_us: enLabels, ko_kr: koLabels, zh_cn: zhCnLabels, zh_tw: zhTwLabels }
