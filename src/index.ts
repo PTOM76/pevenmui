@@ -7,7 +7,7 @@ export { AppContext, useApp } from './appContext'
 // ---- テーマ、寸法、画面幅 ----
 export { PevenProvider, DESKTOP_QUERY, useDesktop, preventPageZoom } from './PevenProvider'
 export { createPevenTheme, desktopStyles, LANDSCAPE_PHONE, type PevenThemeOptions } from './theme'
-export { PEVEN_TOKENS, pevenTokens, type PevenTokens, type PevenTokensOptions } from './tokens'
+export { PEVEN_TOKENS, pevenFont, pevenTokens, type PevenFontSize, type PevenTokens, type PevenTokensOptions } from './tokens'
 export { setUiScale, getUiScale, canvasPixelRatio, localPoint, FULL_HEIGHT, vh, vw } from './uiScale'
 export { usePalette } from './hooks/usePalette'
 
