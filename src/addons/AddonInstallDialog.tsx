@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, Typography } from '@mui/material'
-import { fill, useLabels } from '../labels'
+import { fill, useLabels, type Labels } from '../labels'
 import { pevenFont } from '../tokens'
 import { useAddons } from './context'
 import { cancelDownload, installAll, isDownloading, useDownload } from './downloads'
@@ -17,7 +17,8 @@ interface State {
   downloading: boolean
   /** ダウンロード中に閉じた（ダウンロードは続け、終わったら resolve する） */
   hidden: boolean
-  error: string | null
+  /** 失敗（文字はダイアログで組み立てる。フックは部品の文字の Provider の外で呼ばれることがあるため） */
+  error: { key: 'addonUnavailable' | 'addonBusy' | 'addonFailed'; detail?: string } | null
   resolve: (ok: boolean) => void
 }
 
@@ -40,10 +41,8 @@ async function plan(addons: Addons, ids: string[], force: boolean): Promise<{ ma
  * ダウンロード中に閉じても続き、終わったら resolve する。返す `dialog` を画面のどこかに置く
  */
 export function useAddonInstall() {
-  const l = useLabels()
   const { addons, nameOf } = useAddons()
   const [state, setState] = useState<State | null>(null)
-  const download = useDownload()
 
   /** `force` なら `id` は版が同じでも入れ直す（設定の「導入」）。偽なら未導入か古いものだけ入れる */
   const request = (id: string, force = true, also: string[] = []) =>
@@ -51,7 +50,7 @@ export function useAddonInstall() {
       setState({ id, manifests: null, updating: false, downloading: false, hidden: false, error: null, resolve })
       plan(addons, [id, ...also], force).then(
         ({ manifests, updating }) => setState((s) => s && { ...s, manifests, updating }),
-        (e) => setState((s) => s && { ...s, error: fill(l.addonUnavailable, { error: String(e) }) }),
+        (e) => setState((s) => s && { ...s, error: { key: 'addonUnavailable', detail: String(e) } }),
       )
     })
 
@@ -79,10 +78,11 @@ export function useAddonInstall() {
   // 文言の主語: 入れ替えるものに `id` が含まれていればそれ、依存だけ（実行環境だけが古いなど）なら最初のもの
   const mainId = state?.manifests?.some((m) => m.id === state.id) ? state.id : (state?.manifests?.[0]?.id ?? state?.id ?? '')
 
-  const run = async () => {
+  /** `l` はダイアログの部品の文字（ゲージに出す名前に使う） */
+  const run = async (l: Labels) => {
     if (!state?.manifests) return
     // ほかの追加機能を取得中なら、終わるまで待ってもらう
-    if (isDownloading()) return setState({ ...state, error: l.addonBusy })
+    if (isDownloading()) return setState({ ...state, error: { key: 'addonBusy' } })
     const { resolve } = state
     setState({ ...state, downloading: true, error: null })
     try {
@@ -97,18 +97,29 @@ export function useAddonInstall() {
         return
       }
       // 閉じていても、失敗は見えるように出し直す
-      setState((s) => s && { ...s, downloading: false, hidden: false, error: fill(l.addonFailed, { error: String(e) }) })
+      setState((s) => s && { ...s, downloading: false, hidden: false, error: { key: 'addonFailed', detail: String(e) } })
     }
   }
+  const hide = () => setState((s) => s && { ...s, hidden: true })
+  const dialog = <InstallDialog state={state} mainId={mainId} onClose={close} onHide={hide} onRun={(l) => void run(l)} />
+
+  return { request, ensure, dialog }
+}
+
+/** 導入のダイアログ（部品の文字は、置いた場所の Provider から読む） */
+function InstallDialog({ state, mainId, onClose, onHide, onRun }: { state: State | null; mainId: string; onClose: (ok: boolean) => void; onHide: () => void; onRun: (l: Labels) => void }) {
+  const l = useLabels()
+  const { nameOf } = useAddons()
+  const download = useDownload()
   const busy = !!state?.downloading
   const progress = download?.progress ?? 0
   const size = state?.manifests?.reduce((s, m) => s + addonSize(m), 0) ?? 0
+  // 依存するものも一緒に入れるときは、その名前も出す
   const extra = state?.manifests?.filter((m) => m.id !== mainId).map((m) => nameOf(m.id)) ?? []
-  const hide = () => setState((s) => s && { ...s, hidden: true })
   const up = !!state?.updating
 
-  const dialog = (
-    <Dialog open={!!state && !state.hidden} onClose={() => (busy ? hide() : close(false))} fullWidth maxWidth="xs">
+  return (
+    <Dialog open={!!state && !state.hidden} onClose={() => (busy ? onHide() : onClose(false))} fullWidth maxWidth="xs">
       <DialogTitle sx={{ fontSize: pevenFont('xl'), py: 1.5 }}>{up ? l.addonUpdateTitle : l.addonInstallTitle}</DialogTitle>
       <DialogContent dividers>
         <Typography sx={{ fontSize: pevenFont('lg') }}>{fill(up ? l.addonUpdateText : l.addonInstallText, { name: state ? nameOf(mainId) : '' })}</Typography>
@@ -122,7 +133,11 @@ export function useAddonInstall() {
             <Typography sx={{ fontSize: pevenFont('md'), color: 'text.secondary', mt: 0.5 }}>{l.addonBackground}</Typography>
           </>
         )}
-        {state?.error && <Typography className="selectable" sx={{ fontSize: pevenFont('md'), color: 'error.main', mt: 1.5 }}>{state.error}</Typography>}
+        {state?.error && (
+          <Typography className="selectable" sx={{ fontSize: pevenFont('md'), color: 'error.main', mt: 1.5 }}>
+            {fill(l[state.error.key], { error: state.error.detail ?? '' })}
+          </Typography>
+        )}
       </DialogContent>
       <DialogActions>
         {busy ? (
@@ -130,16 +145,16 @@ export function useAddonInstall() {
             <Button size="small" color="error" onClick={cancelDownload}>
               {l.jobCancel}
             </Button>
-            <Button size="small" onClick={hide}>
+            <Button size="small" onClick={onHide}>
               {l.close}
             </Button>
           </>
         ) : (
           <>
-            <Button size="small" onClick={() => close(false)}>
+            <Button size="small" onClick={() => onClose(false)}>
               {l.cancel}
             </Button>
-            <Button size="small" disabled={!state?.manifests} onClick={() => void run()}>
+            <Button size="small" disabled={!state?.manifests} onClick={() => onRun(l)}>
               {up ? l.addonUpdate : l.addonInstall}
             </Button>
           </>
@@ -147,6 +162,4 @@ export function useAddonInstall() {
       </DialogActions>
     </Dialog>
   )
-
-  return { request, ensure, dialog }
 }
