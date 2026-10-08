@@ -18,6 +18,7 @@ PC では Windows のデスクトップアプリ、スマホでは Android の�
 | --- | --- |
 | `PevenProvider` / `createPevenTheme` | Material Design 寄りのテーマ。PC では開閉アニメーションを短くし、波紋を消してフォーカス枠を表示する。`i18n` と `lang` を渡すと、アプリの文字と部品の文字をその言語に切り替える |
 | `PEVEN_TOKENS` / `pevenTokens` | 部品の寸法（文字の大きさの段階、メニュー、上のバー、ステータスバー、設定の分類の幅）。テーマの `peven` で上書きできる |
+| `useJobQueue` | ファイルの一覧を 1 件ずつ順に処理する（一覧の復元と保存、一覧ごとの中止、1 件だけの中止、やり直し）。処理の中身と保存の形はアプリが渡す |
 | `pevenFont` | sx の `fontSize` に渡す文字の大きさ（`sx={{ fontSize: pevenFont('base') }}`。xs 10、sm 11、md 12、base 13、lg 14、xl 16） |
 | `setUiScale` / `FULL_HEIGHT` / `vh` / `vw` | 画面の大きさ（拡大率）と、それに合わせた高さと幅 |
 | `usePalette` | 今の配色（ライト / ダーク）のパレットを取り出す（Canvas に描くとき） |
