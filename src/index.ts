@@ -59,3 +59,12 @@ export { useStableFn } from './hooks/useStableFn'
 export { useJobQueue, type JobItem, type JobPersist, type JobQueueOptions, type JobStatus } from './hooks/useJobQueue'
 export { useJobs, startJob, type Job } from './progress/jobs'
 export { JobGauge } from './progress/JobGauge'
+
+// ---- 追加機能 ----
+export { createAddons, addonSize, addonsSupported, type Addons, type AddonsOptions, type AddonInfo, type AddonManifest, type AddonFile } from './addons/store'
+export { addonFolderSupported, type AddonFolder } from './addons/folder'
+export { AddonsContext, useAddons, type AddonsContextValue } from './addons/context'
+export { useAddonInstall } from './addons/AddonInstallDialog'
+export { AddonSection } from './addons/AddonSection'
+export { AddonFolderRow } from './addons/AddonFolderRow'
+export { useDownload, isDownloading, cancelDownload, type Download } from './addons/downloads'

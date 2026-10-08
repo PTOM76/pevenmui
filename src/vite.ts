@@ -47,3 +47,53 @@ export function pevenManifest(info: AppInfo) {
   const app = defineApp(info)
   return { name: app.name, short_name: app.shortName, lang: app.htmlLang, ...(app.description ? { description: app.description } : {}) }
 }
+
+/**
+ * 追加機能のファイルを保存先から返す workbox の経路（`workbox.runtimeCaching` に入れる。src/addons/store.ts）。
+ * 保存先（Cache Storage）にあればそれ、なければ選んだフォルダー（試験的）、なければネットワーク。保存は導入の処理だけが行う
+ * （CacheFirst だと取ったものを勝手に保存し、中断したファイルや更新確認のマニフェストが残る）。
+ * workbox は関数を文字列にして sw.js に埋め込むので、アプリの値を埋めた文字列から作る
+ */
+export function pevenAddonsRoute(appId: string) {
+  const cacheName = `${appId}-addons`
+  const src = `async ({ request, url }) => {
+    // ignoreVary: サーバーが付ける Vary（Origin / Accept-Encoding）で照合が外れないようにする
+    const hit = await caches.match(request, { cacheName: ${JSON.stringify(cacheName)}, ignoreVary: true })
+    if (hit) return hit
+    // 導入の取得（?v=）や更新の確認（?t=）はネットワークから取る
+    if (!url.search) {
+      try {
+        // アプリの IndexedDB（createIdb と同じ形。まだなければ同じく kv を作る）
+        const dir = await new Promise((resolve) => {
+          const open = indexedDB.open(${JSON.stringify(appId)}, 1)
+          open.onupgradeneeded = () => open.result.createObjectStore('kv')
+          open.onerror = () => resolve(null)
+          open.onsuccess = () => {
+            const req = open.result.transaction('kv').objectStore('kv').get('addonFolder')
+            req.onsuccess = () => (resolve(req.result), open.result.close())
+            req.onerror = () => (resolve(null), open.result.close())
+          }
+        })
+        if (dir && (await dir.queryPermission({ mode: 'readwrite' })) === 'granted') {
+          const rel = decodeURIComponent(url.pathname.slice(new URL(registration.scope).pathname.length + 'addons/'.length))
+          const parts = rel.split('/')
+          let h = await dir.getDirectoryHandle(${JSON.stringify(cacheName)})
+          for (const p of parts.slice(0, -1)) h = await h.getDirectoryHandle(p)
+          const file = await (await h.getFileHandle(parts[parts.length - 1])).getFile()
+          const ext = rel.slice(rel.lastIndexOf('.') + 1)
+          const types = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' }
+          return new Response(file, { headers: { 'content-type': types[ext] ?? 'application/octet-stream' } })
+        }
+      } catch {
+        // フォルダーになければネットワークから
+      }
+    }
+    return fetch(request)
+  }`
+  return {
+    // ページを開く操作は対象外（追加機能のファイルだけを保存先から返す）
+    urlPattern: ({ url, request }: { url: URL; request: Request }) => url.pathname.includes('/addons/') && request.mode !== 'navigate',
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    handler: new Function(`return ${src}`)() as (o: { request: Request; url: URL }) => Promise<Response>,
+  }
+}

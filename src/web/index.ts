@@ -26,3 +26,5 @@ export {
   type RecentFile,
 } from './fileAccess'
 export { canSaveToFolder, chooseSaveFolder, folderFileTarget, saveToFolder, savedFolderName } from './folderSave'
+export { createAddons, addonSize, addonsSupported, type Addons, type AddonsOptions, type AddonInfo, type AddonManifest, type AddonFile } from '../addons/store'
+export { addonFolderSupported, type AddonFolder } from '../addons/folder'
