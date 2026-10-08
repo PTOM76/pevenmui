@@ -35,10 +35,11 @@ export async function createZip(entries: ZipEntry[]): Promise<Blob> {
   const enc = new TextEncoder()
   const [time, date] = dosTime()
   const parts: BlobPart[] = []
-  const central: Uint8Array[] = []
+  const central: Uint8Array<ArrayBuffer>[] = []
   let offset = 0
   for (const e of entries) {
-    const data = e.data instanceof Blob ? new Uint8Array(await e.data.arrayBuffer()) : e.data instanceof Uint8Array ? e.data : new Uint8Array(e.data)
+    // Blob に入れられるよう、ArrayBuffer を持つ形にそろえる（Uint8Array は SharedArrayBuffer のこともある）
+    const data = e.data instanceof Blob ? new Uint8Array(await e.data.arrayBuffer()) : new Uint8Array(e.data)
     const name = enc.encode(e.name)
     const crc = crc32(data)
     // ローカルヘッダー（30 バイト + 名前）。0x0800 はファイル名が UTF-8 の印
