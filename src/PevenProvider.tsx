@@ -46,8 +46,17 @@ export function PevenProvider<L extends string>(p: { children: ReactNode; theme?
       <CssBaseline />
       {p.desktopLook && desktop && <GlobalStyles styles={desktopStyles} />}
       {children}
+      <IosTopBlurFix />
     </ThemeProvider>
   )
+}
+
+/**
+ * iOS 27 の PWA で画面上端に出るぼかしを消す。
+ * 上端 10px より高い固定要素があるとぼかしが付かないため、文字で切り抜いた（何も描かれない）背景の要素を置く
+ */
+function IosTopBlurFix() {
+  return <div aria-hidden style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 11, zIndex: 2147483647, pointerEvents: 'none', backgroundColor: '#fff', WebkitBackgroundClip: 'text', backgroundClip: 'text' }} />
 }
 
 /**
