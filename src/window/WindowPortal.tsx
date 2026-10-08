@@ -320,9 +320,12 @@ export function WindowPortal(p: Props) {
       // 本文は窓いっぱいに伸ばしているので、測る間だけ伸ばすのをやめて本来の高さにする
       const parts = [body, ...Array.from(body.children)] as HTMLElement[]
       const saved = parts.map((e) => e.style.flex)
+      // 伸ばすのをやめるとスクロールの位置が先頭に戻るので、覚えて戻す（メニューを開いただけでも測り直すため）
+      const scrolls = parts.map((e) => e.scrollTop)
       parts.forEach((e) => (e.style.flex = 'none'))
       const need = Array.from(body.children).reduce((s, c) => s + (c as HTMLElement).offsetHeight, 0) * getUiScale()
       parts.forEach((e, i) => (e.style.flex = saved[i]))
+      parts.forEach((e, i) => (e.scrollTop = scrolls[i]))
       const target = Math.min(need, win.screen.availHeight * 0.9)
       if (need > 0 && Math.abs(target - win.innerHeight) > 8) win.resizeBy(0, Math.round(target - win.innerHeight))
     }
