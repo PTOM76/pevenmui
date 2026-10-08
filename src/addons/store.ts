@@ -13,6 +13,8 @@ export interface AddonFile {
   /** 元の大きさ（バイト）。配信が gzip だと Content-Length は圧縮後になるので、進捗はこれで出す */
   size: number
   sha256: string
+  /** 取りに行く場所（ほかのサイトにあるモデルなど）。省くと追加機能のフォルダーの `path`。どちらでも、保存先には `path` の名前で置く */
+  url?: string
 }
 
 export interface AddonManifest {
@@ -110,8 +112,9 @@ export function createAddons<N extends string>(o: AddonsOptions<N>) {
 
   /** 取得して大きさとハッシュを確かめる */
   const fetchChecked = async (m: AddonManifest, f: AddonFile, onBytes: (n: number) => void, signal?: AbortSignal) => {
-    // 導入済みの古い版が Service Worker から返らないよう、クエリを付けて保存先と別の URL にする
-    const res = await fetch(`${new URL(f.path, baseUrl(m.id)).href}?v=${encodeURIComponent(m.version)}`, { cache: 'no-store', signal })
+    // 導入済みの古い版が Service Worker から返らないよう、クエリを付けて保存先と別の URL にする（ほかのサイトのものは、版を含む URL をそのまま使う）
+    const src = f.url ?? `${new URL(f.path, baseUrl(m.id)).href}?v=${encodeURIComponent(m.version)}`
+    const res = await fetch(src, { cache: 'no-store', signal })
     if (!res.ok) throw new Error(`${f.path}: HTTP ${res.status}`)
     const buf = await readAll(res, onBytes)
     if (buf.byteLength !== f.size || (await sha256(buf)) !== f.sha256) throw new Error(`${f.path}: 内容が一致しません`)
