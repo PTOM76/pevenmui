@@ -13,7 +13,8 @@ export function AboutDialog(p: { open: boolean; onClose: () => void; icon: React
   return (
     <WindowDialog open={p.open} onClose={p.onClose} windowTitle={name} name="about" width={444} height={440} dialogProps={{ maxWidth: 'xs', fullWidth: true }}>
       <DialogContent>
-        <Stack spacing={2} sx={{ alignItems: 'center', pt: 1 }}>
+        {/* 説明なので、名前や版をそのまま写せるよう全体を選択できるようにする */}
+        <Stack className="selectable" spacing={2} sx={{ alignItems: 'center', pt: 1 }}>
           {p.icon}
           <Typography variant="h6">{name}</Typography>
           <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 2, rowGap: 0.75, m: 0, width: '100%' }}>
