@@ -37,6 +37,7 @@
   "addonChecking": "取得資訊中…",
   "addonDownloading": "下載中… {percent}%",
   "addonQueued": "將在其他附加功能下載完成後開始",
+  "addonInFlight": "正在下載",
   "addonBackground": "關閉後下載仍會繼續（顯示在狀態列）",
   "addonDownloadingTask": "正在下載「{name}」",
   "addonInstall": "下載",

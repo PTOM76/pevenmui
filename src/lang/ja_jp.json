@@ -37,6 +37,7 @@
   "addonChecking": "情報を取得中…",
   "addonDownloading": "ダウンロード中… {percent}%",
   "addonQueued": "ほかの追加機能のダウンロード後に開始されます",
+  "addonInFlight": "ダウンロード中です",
   "addonBackground": "閉じてもダウンロードは続きます（ステータスバーに表示）",
   "addonDownloadingTask": "「{name}」をダウンロード中",
   "addonInstall": "ダウンロード",

@@ -37,6 +37,7 @@
   "addonChecking": "정보를 가져오는 중…",
   "addonDownloading": "다운로드 중… {percent}%",
   "addonQueued": "다른 추가 기능의 다운로드가 끝나면 시작됩니다",
+  "addonInFlight": "다운로드 중입니다",
   "addonBackground": "닫아도 다운로드는 계속됩니다(상태 표시줄에 표시)",
   "addonDownloadingTask": "'{name}' 받는 중",
   "addonInstall": "다운로드",

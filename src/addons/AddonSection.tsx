@@ -6,6 +6,7 @@ import { useHighlighter } from '../settings/search'
 import { pevenFont } from '../tokens'
 import { mb, useAddonInstall } from './AddonInstallDialog'
 import { useAddons } from './context'
+import { useDownloadingIds } from './downloads'
 import { addonSize, addonsSupported, type AddonManifest } from './store'
 
 interface Status {
@@ -24,6 +25,9 @@ export function AddonSection({ ids }: { ids: string[] }) {
   const [status, setStatus] = useState<Record<string, Status>>({})
   const [message, setMessage] = useState<string | null>(null)
   const list = addons.ADDONS.filter((a) => ids.includes(a.id))
+  // ほかの画面で導入中のものは、導入も削除も押せなくする（終わったら表示を取り直す）
+  const busyIds = useDownloadingIds()
+  const busyKey = list.filter((a) => busyIds.has(a.id)).map((a) => a.id).join()
 
   const refresh = () => {
     for (const a of list) {
@@ -33,7 +37,7 @@ export function AddonSection({ ids }: { ids: string[] }) {
     }
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(refresh, [ids.join()])
+  useEffect(refresh, [ids.join(), busyKey])
 
   if (!addonsSupported()) return <Typography sx={{ gridColumn: '1 / -1', fontSize: pevenFont('base') }}>{l.addonUnsupported}</Typography>
 
@@ -63,20 +67,21 @@ export function AddonSection({ ids }: { ids: string[] }) {
         const s = status[a.id]
         const updatable = !!(s?.installed && s.latest && s.latest.version !== s.installed.version)
         const name = nameOf(a.id, true)
+        const busy = busyIds.has(a.id)
         // 中身の文字の長さで幅が変わらないよう、まとまり（Group）の枠の幅いっぱいにそろえる（cqi は枠の幅）
         return (
           <Box key={a.id} sx={{ gridColumn: '1 / -1', width: '100cqi', maxWidth: '100cqi', display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ fontSize: pevenFont('base'), ...hit(name) }}>{name}</Typography>
-              <Typography className="selectable" sx={{ fontSize: pevenFont('sm'), color: 'text.secondary' }}>{describe(s)}</Typography>
+              <Typography className="selectable" sx={{ fontSize: pevenFont('sm'), color: 'text.secondary' }}>{busy ? l.addonInFlight : describe(s)}</Typography>
             </Box>
             {(!s?.installed || updatable) && (
-              <Button size="small" variant="outlined" disabled={!s?.latest} onClick={() => void install(a.id)} sx={{ flexShrink: 0 }}>
+              <Button size="small" variant="outlined" disabled={!s?.latest || busy} onClick={() => void install(a.id)} sx={{ flexShrink: 0 }}>
                 {updatable ? l.addonUpdate : l.addonInstall}
               </Button>
             )}
             {s?.installed && (
-              <Button size="small" variant="outlined" color="error" onClick={() => void remove(a.id)} sx={{ flexShrink: 0 }}>
+              <Button size="small" variant="outlined" color="error" disabled={busy} onClick={() => void remove(a.id)} sx={{ flexShrink: 0 }}>
                 {l.addonDelete}
               </Button>
             )}

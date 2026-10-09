@@ -67,4 +67,4 @@ export { AddonsContext, useAddons, type AddonsContextValue } from './addons/cont
 export { useAddonInstall } from './addons/AddonInstallDialog'
 export { AddonSection } from './addons/AddonSection'
 export { AddonFolderRow } from './addons/AddonFolderRow'
-export { useDownload, isDownloading, cancelDownload, type Download } from './addons/downloads'
+export { useDownload, useDownloadingIds, isDownloading, cancelDownload, type Download } from './addons/downloads'

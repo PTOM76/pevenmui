@@ -22,6 +22,13 @@ const subscribe = (f: () => void) => {
   return () => listeners.delete(f)
 }
 let snapshot: Download | null = null
+/** ダウンロード中か順番待ちの追加機能と、その導入が終わると解決するもの（同じものを重ねて取りに行かないため） */
+const inFlight = new Map<string, Promise<void>>()
+let inFlightIds: ReadonlySet<string> = new Set()
+const changeInFlight = () => {
+  inFlightIds = new Set(inFlight.keys())
+  listeners.forEach((f) => f())
+}
 const update = (d: typeof current) => {
   current = d
   snapshot = d && { label: d.label, progress: d.progress }
@@ -30,6 +37,9 @@ const update = (d: typeof current) => {
 
 /** ダウンロード中のもの（なければ null） */
 export const useDownload = () => useSyncExternalStore(subscribe, () => snapshot)
+
+/** ダウンロード中か順番待ちの追加機能の id（設定の「導入」「削除」を押せなくするため） */
+export const useDownloadingIds = () => useSyncExternalStore(subscribe, () => inFlightIds)
 
 /** ダウンロード中か、順番待ちのものがあるか */
 export const isDownloading = () => pending > 0
@@ -41,14 +51,27 @@ const abortError = () => new DOMException('aborted', 'AbortError')
 
 /**
  * `manifests` を順に導入する。ほかのダウンロード中なら、終わってから始める。`task` はゲージに出す文字。
+ * すでにダウンロード中か順番待ちのものは取り直さず、その完了を待つ。
  * `signal` か cancelDownload で止めたら AbortError で失敗する。`onStart` は待ち終えて始めるときに呼ぶ
  */
 export async function installAll(addons: Addons, manifests: AddonManifest[], label: string, task: string, signal?: AbortSignal, onStart?: () => void) {
+  // ほかの画面から同じものを導入中なら、それを待つだけにする
+  const others = manifests.filter((m) => inFlight.has(m.id)).map((m) => inFlight.get(m.id)!)
+  manifests = manifests.filter((m) => !inFlight.has(m.id))
+  if (!manifests.length) {
+    onStart?.()
+    await Promise.all(others)
+    return
+  }
   const ctrl = new AbortController()
   signal?.addEventListener('abort', () => ctrl.abort())
   const prev = tail
   let done!: () => void
   tail = new Promise((r) => (done = r))
+  // 待つ側には成否を伝えない（失敗したら、待っていた側の確認で入っていないと分かる）
+  const finished = tail
+  for (const m of manifests) inFlight.set(m.id, finished)
+  changeInFlight()
   pending++
   // 待っている間もゲージに出し、そこから止められるようにする
   const job = startJob('download', task, () => ctrl.abort())
@@ -72,12 +95,15 @@ export async function installAll(addons: Addons, manifests: AddonManifest[], lab
       )
       before += addonSize(m)
     }
+    await Promise.all(others)
     // 数十MBを取り直さずに済むよう、消されにくくする申請もしておく（断られても使える）
     void navigator.storage?.persist?.()
   } finally {
     job.end()
     if (current?.ctrl === ctrl) update(null)
     pending--
+    for (const m of manifests) if (inFlight.get(m.id) === finished) inFlight.delete(m.id)
+    changeInFlight()
     done()
   }
 }

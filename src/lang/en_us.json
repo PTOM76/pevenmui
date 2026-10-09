@@ -37,6 +37,7 @@
   "addonChecking": "Checking…",
   "addonDownloading": "Downloading… {percent}%",
   "addonQueued": "Starts after the other add-on finishes downloading",
+  "addonInFlight": "Downloading",
   "addonBackground": "The download continues if you close this (shown in the status bar)",
   "addonDownloadingTask": "Downloading '{name}'",
   "addonInstall": "Download",
