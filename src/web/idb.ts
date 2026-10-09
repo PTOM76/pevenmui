@@ -5,6 +5,8 @@ export interface Idb {
   get(key: string): Promise<unknown>
   put(key: string, value: unknown): Promise<void>
   delete(key: string): Promise<void>
+  /** `prefix` で始まるキーの一覧 */
+  keys(prefix: string): Promise<string[]>
   /** `prefix` で始まるキーをすべて消す */
   deletePrefix(prefix: string): Promise<void>
   /** すべて消す。`keep` で始まるキーは残す */
@@ -54,6 +56,7 @@ export function createIdb(dbName: string): Idb {
     get: (key) => withStore<unknown>('readonly', (s) => s.get(key)),
     put: (key, value) => withStore('readwrite', (s) => s.put(value, key)).then(() => {}),
     delete: (key) => withStore('readwrite', (s) => s.delete(key)).then(() => {}),
+    keys: (prefix) => withStore('readonly', (s) => s.getAllKeys(IDBKeyRange.bound(prefix, `${prefix}￿`))).then((k) => k.map(String)),
     deletePrefix: (prefix) => withTx((s) => s.delete(IDBKeyRange.bound(prefix, `${prefix}￿`))),
     clear: (keep) =>
       keep
