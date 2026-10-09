@@ -63,6 +63,5 @@
   "addonDelete": "Delete",
   "addonFolderMove": "Move installed ({n})",
   "addonFolderMoving": "Moving… {done}/{total}",
-  "addonFolderMoved": "Moved {n} to this folder",
-  "addonFolderShow": "Show folder"
+  "addonFolderMoved": "Moved {n} to this folder"
 }

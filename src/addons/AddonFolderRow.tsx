@@ -35,8 +35,6 @@ export function AddonFolderRow() {
     await refresh()
   }
   const choose = (e: React.MouseEvent) => void run(() => folder.choose(winOf(e)))
-  // ブラウザからはエクスプローラーを開けないので、ファイルを開く画面をこのフォルダーから始めて見せる
-  const show = (e: React.MouseEvent) => void run(() => folder.show(winOf(e)).then(() => false))
   const allow = () => void run(folder.requestPermission)
   const move = () =>
     void run(async () => {
@@ -62,11 +60,6 @@ export function AddonFolderRow() {
       <Button size="small" variant="outlined" onClick={choose} disabled={!!moving} sx={{ flexShrink: 0 }}>
         {l.addonFolderChoose}
       </Button>
-      {name && permission === 'granted' && (
-        <Button size="small" variant="outlined" onClick={show} sx={{ flexShrink: 0 }}>
-          {l.addonFolderShow}
-        </Button>
-      )}
       {/* 導入済みのもの（ブラウザのデータ領域にあるもの）を、このフォルダーへ移す */}
       {name && permission === 'granted' && (cached > 0 || moving) && (
         <Button size="small" variant="outlined" onClick={move} disabled={!!moving} sx={{ flexShrink: 0 }}>

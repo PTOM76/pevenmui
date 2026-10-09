@@ -63,6 +63,5 @@
   "addonDelete": "删除",
   "addonFolderMove": "移动已安装的（{n} 项）",
   "addonFolderMoving": "正在移动… {done}/{total}",
-  "addonFolderMoved": "已将 {n} 项移动到此文件夹",
-  "addonFolderShow": "显示文件夹"
+  "addonFolderMoved": "已将 {n} 项移动到此文件夹"
 }

@@ -17,7 +17,7 @@ interface DirHandle {
   getFileHandle(name: string, o?: { create?: boolean }): Promise<{ getFile(): Promise<File>; createWritable(): Promise<{ write(d: BufferSource | Blob): Promise<void>; close(): Promise<void> }> }>
   removeEntry(name: string, o?: { recursive?: boolean }): Promise<void>
 }
-type DirWindow = Window & { showOpenFilePicker?: (o?: { startIn?: unknown }) => Promise<unknown>; showDirectoryPicker?: (o?: { id?: string; mode?: 'readwrite' }) => Promise<DirHandle> }
+type DirWindow = Window & { showDirectoryPicker?: (o?: { id?: string; mode?: 'readwrite' }) => Promise<DirHandle> }
 
 /** この環境でフォルダーを選べるか */
 export const addonFolderSupported = (win: Window = window) => typeof win !== 'undefined' && !!(win as DirWindow).showDirectoryPicker
@@ -69,18 +69,6 @@ export function createAddonFolder(idb: Idb, dirName: string) {
       }
       await idb.put(ADDON_FOLDER_KEY, dir)
       return dir.name
-    },
-    /**
-     * フォルダーの中身を見せる。ブラウザからはエクスプローラーを開けず、場所（パス）も分からないので、
-     * ファイルを開く画面を、追加機能を置いたフォルダー（なければ選んだフォルダー）から始めて表示する（選んでも何もしない）
-     */
-    async show(win: Window = window) {
-      const open = (win as DirWindow).showOpenFilePicker
-      const start = (await root(false)) ?? (await saved())
-      if (!open || !start) return
-      await open.call(win, { startIn: start }).catch((e: unknown) => {
-        if (!(e instanceof DOMException && e.name === 'AbortError')) throw e
-      })
     },
     /** 選んだフォルダーを忘れる（中のファイルは消さない） */
     forget: () => idb.delete(ADDON_FOLDER_KEY),

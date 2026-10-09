@@ -63,6 +63,5 @@
   "addonDelete": "削除",
   "addonFolderMove": "導入済みのものを移動（{n} 件）",
   "addonFolderMoving": "移動しています… {done}/{total}",
-  "addonFolderMoved": "{n} 件をこのフォルダーへ移動しました",
-  "addonFolderShow": "フォルダーを表示"
+  "addonFolderMoved": "{n} 件をこのフォルダーへ移動しました"
 }
