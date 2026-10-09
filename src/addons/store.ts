@@ -255,6 +255,27 @@ export function createAddons<N extends string>(o: AddonsOptions<N>) {
       }
       return total
     },
+    /** 置き場所ごとの、導入済みの追加機能の合計の大きさ（バイト）。cache はブラウザのデータ領域、folder は選んだフォルダー */
+    async addonsSizeIn(where: 'cache' | 'folder'): Promise<number> {
+      if (!addonsSupported()) return 0
+      const cache = await caches.open(cacheName)
+      let total = 0
+      for (const a of ADDONS) {
+        const m: AddonManifest | null =
+          where === 'cache'
+            ? await cache.match(manifestUrl(a.id)).then((r) => r?.json() ?? null)
+            : await folder.read(a.id, 'manifest.json').then((f) => (f ? f.text().then(JSON.parse) : null), () => null)
+        if (m) total += addonSize(m)
+      }
+      return total
+    },
+    /** 置き場所ごとに、導入済みの追加機能をすべて消す */
+    async clearAddonsIn(where: 'cache' | 'folder') {
+      if (where === 'cache') {
+        if (addonsSupported()) await caches.delete(cacheName)
+      } else await folder.clear()
+      changed()
+    },
     /** 導入済みの追加機能をすべて消す */
     async clearAddons() {
       if (addonsSupported()) await caches.delete(cacheName)
