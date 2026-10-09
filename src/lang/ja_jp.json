@@ -61,8 +61,8 @@
   "addonFolderAllow": "アクセスを許可",
   "addonFolderPermission": "追加機能の保存先のフォルダーへのアクセスが必要です",
   "addonDelete": "削除",
-  "addonFolderMove": "導入済みのものを移す（{n} 件）",
-  "addonFolderMoving": "移しています… {done}/{total}",
-  "addonFolderMoved": "{n} 件をこのフォルダーへ移しました",
+  "addonFolderMove": "導入済みのものを移動（{n} 件）",
+  "addonFolderMoving": "移動しています… {done}/{total}",
+  "addonFolderMoved": "{n} 件をこのフォルダーへ移動しました",
   "addonFolderShow": "フォルダーを表示"
 }
