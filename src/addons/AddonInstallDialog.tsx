@@ -3,7 +3,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgre
 import { fill, useLabels, type Labels } from '../labels'
 import { pevenFont } from '../tokens'
 import { useAddons } from './context'
-import { cancelDownload, installAll, isDownloading, useDownload } from './downloads'
+import { installAll, useDownload } from './downloads'
 import { addonSize, type AddonManifest, type Addons } from './store'
 
 export const mb = (bytes: number) => `${(bytes / 2 ** 20).toFixed(1)} MB`
@@ -15,10 +15,14 @@ interface State {
   /** `id` がすでに入っていて、新しい版に入れ替えるか（文言を「更新」にする） */
   updating: boolean
   downloading: boolean
+  /** ほかのダウンロードが終わるのを待っている */
+  waiting: boolean
+  /** このダウンロードを止める（待っている間も止められる） */
+  ctrl: AbortController | null
   /** ダウンロード中に閉じた（ダウンロードは続け、終わったら resolve する） */
   hidden: boolean
   /** 失敗（文字はダイアログで組み立てる。フックは部品の文字の Provider の外で呼ばれることがあるため） */
-  error: { key: 'addonUnavailable' | 'addonBusy' | 'addonFailed'; detail?: string } | null
+  error: { key: 'addonUnavailable' | 'addonFailed'; detail?: string } | null
   resolve: (ok: boolean) => void
 }
 
@@ -47,7 +51,7 @@ export function useAddonInstall() {
   /** `force` なら `id` は版が同じでも入れ直す（設定の「導入」）。偽なら未導入か古いものだけ入れる */
   const request = (id: string, force = true, also: string[] = []) =>
     new Promise<boolean>((resolve) => {
-      setState({ id, manifests: null, updating: false, downloading: false, hidden: false, error: null, resolve })
+      setState({ id, manifests: null, updating: false, downloading: false, waiting: false, ctrl: null, hidden: false, error: null, resolve })
       plan(addons, [id, ...also], force).then(
         ({ manifests, updating }) => setState((s) => s && { ...s, manifests, updating }),
         (e) => setState((s) => s && { ...s, error: { key: 'addonUnavailable', detail: String(e) } }),
@@ -81,23 +85,22 @@ export function useAddonInstall() {
   /** `l` はダイアログの部品の文字（ゲージに出す名前に使う） */
   const run = async (l: Labels) => {
     if (!state?.manifests) return
-    // ほかの追加機能を取得中なら、終わるまで待ってもらう
-    if (isDownloading()) return setState({ ...state, error: { key: 'addonBusy' } })
     const { resolve } = state
-    setState({ ...state, downloading: true, error: null })
+    const ctrl = new AbortController()
+    // 待つ間に別の導入のダイアログを開いていたら、そちらは変えない
+    const mine = (f: (s: State) => State | null) => setState((s) => (s?.resolve === resolve ? f(s) : s))
+    // ほかの追加機能のダウンロード中なら、順番待ちにする（終わったら始まる）
+    setState({ ...state, downloading: true, waiting: true, ctrl, error: null })
     try {
       const name = nameOf(mainId)
-      await installAll(addons, state.manifests, name, fill(l.addonDownloadingTask, { name }))
+      await installAll(addons, state.manifests, name, fill(l.addonDownloadingTask, { name }), ctrl.signal, () => mine((s) => ({ ...s, waiting: false })))
       resolve(true)
-      setState(null)
+      mine(() => null)
     } catch (e) {
-      if ((e as Error).name === 'AbortError') {
-        resolve(false)
-        setState(null)
-        return
-      }
-      // 閉じていても、失敗は見えるように出し直す
-      setState((s) => s && { ...s, downloading: false, hidden: false, error: { key: 'addonFailed', detail: String(e) } })
+      resolve(false)
+      if ((e as Error).name === 'AbortError') return mine(() => null)
+      // 閉じていても、失敗は見えるように出し直す（入れ替わっていたら出さない）
+      mine((s) => ({ ...s, downloading: false, waiting: false, ctrl: null, hidden: false, error: { key: 'addonFailed', detail: String(e) } }))
     }
   }
   const hide = () => setState((s) => s && { ...s, hidden: true })
@@ -112,7 +115,8 @@ function InstallDialog({ state, mainId, onClose, onHide, onRun }: { state: State
   const { nameOf } = useAddons()
   const download = useDownload()
   const busy = !!state?.downloading
-  const progress = download?.progress ?? 0
+  const waiting = !!state?.waiting
+  const progress = waiting ? 0 : (download?.progress ?? 0)
   const size = state?.manifests?.reduce((s, m) => s + addonSize(m), 0) ?? 0
   // 依存するものも一緒に入れるときは、その名前も出す
   const extra = state?.manifests?.filter((m) => m.id !== mainId).map((m) => nameOf(m.id)) ?? []
@@ -128,8 +132,8 @@ function InstallDialog({ state, mainId, onClose, onHide, onRun }: { state: State
         <Typography className="selectable" sx={{ fontSize: pevenFont('md'), color: 'text.secondary', mt: 1 }}>{l.addonInstallHelp}</Typography>
         {busy && (
           <>
-            <LinearProgress variant="determinate" value={progress * 100} sx={{ mt: 2 }} />
-            <Typography sx={{ fontSize: pevenFont('md'), mt: 0.5 }}>{fill(l.addonDownloading, { percent: String(Math.round(progress * 100)) })}</Typography>
+            <LinearProgress variant={waiting ? 'indeterminate' : 'determinate'} value={progress * 100} sx={{ mt: 2 }} />
+            <Typography sx={{ fontSize: pevenFont('md'), mt: 0.5 }}>{waiting ? l.addonQueued : fill(l.addonDownloading, { percent: String(Math.round(progress * 100)) })}</Typography>
             <Typography sx={{ fontSize: pevenFont('md'), color: 'text.secondary', mt: 0.5 }}>{l.addonBackground}</Typography>
           </>
         )}
@@ -142,7 +146,7 @@ function InstallDialog({ state, mainId, onClose, onHide, onRun }: { state: State
       <DialogActions>
         {busy ? (
           <>
-            <Button size="small" color="error" onClick={cancelDownload}>
+            <Button size="small" color="error" onClick={() => state?.ctrl?.abort()}>
               {l.jobCancel}
             </Button>
             <Button size="small" onClick={onHide}>

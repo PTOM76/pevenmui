@@ -36,7 +36,7 @@
   "addonInstallHelp": "ダウンロード後はオフラインでも利用できます。設定から削除できます",
   "addonChecking": "情報を取得中…",
   "addonDownloading": "ダウンロード中… {percent}%",
-  "addonBusy": "ほかの追加機能をダウンロード中です。終わってからダウンロードしてください",
+  "addonQueued": "ほかの追加機能のダウンロード後に開始されます",
   "addonBackground": "閉じてもダウンロードは続きます（ステータスバーに表示）",
   "addonDownloadingTask": "「{name}」をダウンロード中",
   "addonInstall": "ダウンロード",

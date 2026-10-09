@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { startJob } from '../progress/jobs'
 import { addonSize, type AddonManifest, type Addons } from './store'
 
-/** 追加機能のダウンロード（裏で進める）。導入のダイアログを閉じても続き、進み具合はゲージに出す。同時に行うのは 1 つだけ */
+/** 追加機能のダウンロード（裏で進める）。導入のダイアログを閉じても続き、進み具合はゲージに出す。同時に行うのは 1 つだけで、ほかは順に待つ */
 
 export interface Download {
   /** 表示する名前 */
@@ -12,6 +12,10 @@ export interface Download {
 }
 
 let current: (Download & { ctrl: AbortController }) | null = null
+/** 順番待ちの数（実行中のものを含む） */
+let pending = 0
+/** 最後に足したものが終わると解決する（次のものはこれを待つ） */
+let tail: Promise<void> = Promise.resolve()
 const listeners = new Set<() => void>()
 const subscribe = (f: () => void) => {
   listeners.add(f)
@@ -27,27 +31,41 @@ const update = (d: typeof current) => {
 /** ダウンロード中のもの（なければ null） */
 export const useDownload = () => useSyncExternalStore(subscribe, () => snapshot)
 
-export const isDownloading = () => !!current
+/** ダウンロード中か、順番待ちのものがあるか */
+export const isDownloading = () => pending > 0
 
-/** ダウンロードを止める（途中まで入れたものは消える） */
+/** 今のダウンロードを止める（途中まで入れたものは消える） */
 export const cancelDownload = () => current?.ctrl.abort()
 
-/** `manifests` を順に導入する。`task` はゲージに出す文字。止めたら AbortError で失敗する */
-export async function installAll(addons: Addons, manifests: AddonManifest[], label: string, task: string) {
-  if (current) throw new Error('another download is running')
+const abortError = () => new DOMException('aborted', 'AbortError')
+
+/**
+ * `manifests` を順に導入する。ほかのダウンロード中なら、終わってから始める。`task` はゲージに出す文字。
+ * `signal` か cancelDownload で止めたら AbortError で失敗する。`onStart` は待ち終えて始めるときに呼ぶ
+ */
+export async function installAll(addons: Addons, manifests: AddonManifest[], label: string, task: string, signal?: AbortSignal, onStart?: () => void) {
   const ctrl = new AbortController()
-  update({ label, progress: 0, ctrl })
+  signal?.addEventListener('abort', () => ctrl.abort())
+  const prev = tail
+  let done!: () => void
+  tail = new Promise((r) => (done = r))
+  pending++
+  // 待っている間もゲージに出し、そこから止められるようにする
   const job = startJob('download', task, () => ctrl.abort())
-  // 全体の大きさに対する進捗にする
-  const total = manifests.reduce((s, m) => s + addonSize(m), 0) || 1
-  let before = 0
   try {
+    await prev
+    if (ctrl.signal.aborted) throw abortError()
+    onStart?.()
+    update({ label, progress: 0, ctrl })
+    // 全体の大きさに対する進捗にする
+    const total = manifests.reduce((s, m) => s + addonSize(m), 0) || 1
+    let before = 0
     for (const m of manifests) {
       await addons.install(
         m,
         (p) => {
           const progress = (before + p * addonSize(m)) / total
-          if (current) update({ ...current, progress })
+          if (current?.ctrl === ctrl) update({ ...current, progress })
           job.update(progress)
         },
         ctrl.signal,
@@ -58,6 +76,8 @@ export async function installAll(addons: Addons, manifests: AddonManifest[], lab
     void navigator.storage?.persist?.()
   } finally {
     job.end()
-    update(null)
+    if (current?.ctrl === ctrl) update(null)
+    pending--
+    done()
   }
 }

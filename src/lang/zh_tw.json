@@ -36,7 +36,7 @@
   "addonInstallHelp": "下載後可離線使用。可在設定中刪除",
   "addonChecking": "取得資訊中…",
   "addonDownloading": "下載中… {percent}%",
-  "addonBusy": "正在下載其他附加功能。請在完成後再下載",
+  "addonQueued": "將在其他附加功能下載完成後開始",
   "addonBackground": "關閉後下載仍會繼續（顯示在狀態列）",
   "addonDownloadingTask": "正在下載「{name}」",
   "addonInstall": "下載",

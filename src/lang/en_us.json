@@ -36,7 +36,7 @@
   "addonInstallHelp": "Once downloaded, it works offline. You can remove it in Settings",
   "addonChecking": "Checking…",
   "addonDownloading": "Downloading… {percent}%",
-  "addonBusy": "Another add-on is downloading. Download this one after it finishes",
+  "addonQueued": "Starts after the other add-on finishes downloading",
   "addonBackground": "The download continues if you close this (shown in the status bar)",
   "addonDownloadingTask": "Downloading '{name}'",
   "addonInstall": "Download",
