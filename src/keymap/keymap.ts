@@ -40,6 +40,7 @@ export function actionOf<Id extends string>(keymap: Keymap<Id>, combo: string): 
 
 const KEY_NAMES: Record<string, string> = {
   ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Escape: 'Esc', Space: 'Space', Backquote: '`', Minus: '-', Equal: '=',
+  NumpadAdd: 'Num +', NumpadSubtract: 'Num -', NumpadMultiply: 'Num *', NumpadDivide: 'Num /', NumpadDecimal: 'Num .', NumpadEnter: 'Num Enter',
   BracketLeft: '[', BracketRight: ']', Backslash: '\\', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', IntlRo: '\\', IntlYen: '¥',
 }
 
