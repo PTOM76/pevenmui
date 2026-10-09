@@ -60,5 +60,9 @@
   "addonFolderChoose": "Choose folder",
   "addonFolderAllow": "Allow access",
   "addonFolderPermission": "Access to the add-on folder is needed",
-  "addonDelete": "Delete"
+  "addonDelete": "Delete",
+  "addonFolderMove": "Move installed ({n})",
+  "addonFolderMoving": "Moving… {done}/{total}",
+  "addonFolderMoved": "Moved {n} to this folder",
+  "addonFolderShow": "Show folder"
 }

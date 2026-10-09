@@ -60,5 +60,9 @@
   "addonFolderChoose": "폴더 선택",
   "addonFolderAllow": "접근 허용",
   "addonFolderPermission": "추가 기능 저장 폴더에 대한 접근이 필요합니다",
-  "addonDelete": "삭제"
+  "addonDelete": "삭제",
+  "addonFolderMove": "설치된 것 이동({n}건)",
+  "addonFolderMoving": "이동 중… {done}/{total}",
+  "addonFolderMoved": "{n}건을 이 폴더로 이동했습니다",
+  "addonFolderShow": "폴더 표시"
 }

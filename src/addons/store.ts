@@ -168,9 +168,50 @@ export function createAddons<N extends string>(o: AddonsOptions<N>) {
     }
   }
 
+  /** Cache Storage に入っている追加機能（選んだフォルダーへ移せるもの） */
+  const cachedIds = async (): Promise<string[]> => {
+    if (!addonsSupported()) return []
+    const cache = await caches.open(cacheName)
+    const out: string[] = []
+    for (const a of ADDONS) if (await cache.match(manifestUrl(a.id))) out.push(a.id)
+    return out
+  }
+
+  /**
+   * Cache Storage の追加機能を、選んだフォルダーへ移す（1 つずつ。ファイル、マニフェストの順に書き、書けてから Cache Storage から消す）。
+   * 途中で失敗しても、Cache Storage のものは残るので使い続けられる。`onProgress(移した数, 全部の数)`。移した数を返す
+   */
+  const moveToFolder = async (onProgress?: (done: number, total: number) => void): Promise<number> => {
+    if (!(await folder.installsTo())) throw new Error('追加機能の保存先のフォルダーに書き込めません')
+    const ids = await cachedIds()
+    const cache = await caches.open(cacheName)
+    for (const [i, id] of ids.entries()) {
+      const m = (await (await cache.match(manifestUrl(id)))!.json()) as AddonManifest
+      try {
+        for (const f of m.files) {
+          const res = await cache.match(new URL(f.path, baseUrl(id)).href)
+          if (!res) throw new Error(`${id}/${f.path} が見つかりません`)
+          await folder.write(id, f.path, await res.arrayBuffer())
+        }
+        await folder.write(id, 'manifest.json', JSON.stringify(m))
+      } catch (e) {
+        // 書きかけのものは消す（Cache Storage のものはそのまま）
+        await folder.remove(id)
+        throw e
+      }
+      const base = baseUrl(id).href
+      for (const req of await cache.keys()) if (req.url.startsWith(base)) await cache.delete(req)
+      onProgress?.(i + 1, ids.length)
+    }
+    changed()
+    return ids.length
+  }
+
   return {
     ADDONS,
     cacheName,
+    cachedIds,
+    moveToFolder,
     folder,
     withRequires,
     installedManifest,

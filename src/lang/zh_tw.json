@@ -60,5 +60,9 @@
   "addonFolderChoose": "選擇資料夾",
   "addonFolderAllow": "允許存取",
   "addonFolderPermission": "需要存取附加功能的儲存資料夾",
-  "addonDelete": "刪除"
+  "addonDelete": "刪除",
+  "addonFolderMove": "移動已安裝的（{n} 項）",
+  "addonFolderMoving": "正在移動… {done}/{total}",
+  "addonFolderMoved": "已將 {n} 項移動到此資料夾",
+  "addonFolderShow": "顯示資料夾"
 }
