@@ -97,3 +97,44 @@ export function pevenAddonsRoute(appId: string) {
     handler: new Function(`return ${src}`)() as (o: { request: Request; url: URL }) => Promise<Response>,
   }
 }
+
+/** cross-origin isolation（SharedArrayBuffer、wasm のマルチスレッド）のためのヘッダー。credentialless はほかのサイトのものを Cookie なしで読める */
+const ISOLATION_HEADERS = { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' }
+
+/** Service Worker に読み込ませるスクリプトの名前（`workbox.importScripts` に入れる） */
+export const ISOLATION_SCRIPT = 'isolation.js'
+
+/**
+ * ページの応答に COOP/COEP を足す Service Worker のスクリプト。GitHub Pages はヘッダーを付けられないため。
+ * workbox が返すページ（navigate）の応答を包むだけで、キャッシュや更新の動きは変えない。
+ * Safari は credentialless に未対応で、isolation にならない（今までどおり 1 スレッド）
+ */
+// sw.js と同じ全体の範囲で動くので、名前がぶつからないよう { } で囲む
+const isolationScript = `{
+const h = ${JSON.stringify(ISOLATION_HEADERS)}
+const add = (r) => {
+  if (!r || r.status === 0 || r.type === 'opaqueredirect') return r
+  const headers = new Headers(r.headers)
+  for (const k in h) headers.set(k, h[k])
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers })
+}
+const respondWith = FetchEvent.prototype.respondWith
+FetchEvent.prototype.respondWith = function (r) {
+  return respondWith.call(this, this.request.mode === 'navigate' ? Promise.resolve(r).then(add) : r)
+}
+}
+`
+
+/**
+ * cross-origin isolation にする。開発サーバーとプレビューはヘッダーを付け、ビルドでは Service Worker 用のスクリプトを出す
+ * （`workbox: { importScripts: [ISOLATION_SCRIPT] }` と一緒に使う。初めて開いた回は Service Worker がまだ受け持たないので isolation にならない）
+ */
+export function pevenIsolation(): Plugin {
+  return {
+    name: 'pevenmui-isolation',
+    config: () => ({ server: { headers: ISOLATION_HEADERS }, preview: { headers: ISOLATION_HEADERS } }),
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: ISOLATION_SCRIPT, source: isolationScript })
+    },
+  }
+}
