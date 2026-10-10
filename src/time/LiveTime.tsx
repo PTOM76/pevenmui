@@ -1,8 +1,7 @@
 // 再生中の時間の表示（部品の中だけで更新する）。アプリで共通
-import { useEffect, useState } from 'react'
-import { ButtonBase, InputBase } from '@mui/material'
 import { formatTime, parseTime } from './time'
 import { useLivePosition } from './useLivePosition'
+import { InlineEdit } from './InlineEdit'
 
 /** 表示を更新する間隔（ミリ秒）。時間の数字が読める速さで十分 */
 const UPDATE_MS = 100
@@ -14,60 +13,15 @@ const UPDATE_MS = 100
  */
 export default function LiveTime(p: { position: number; playing: boolean; livePosition: () => number; duration: number; onSeek?: (t: number) => void; editRequest?: number; inputLabel: string }) {
   const now = useLivePosition(p.position, p.playing, p.livePosition, UPDATE_MS)
-  const [draft, setDraft] = useState<string | null>(null)
-  const [error, setError] = useState(false)
-  const start = () => {
-    setDraft(formatTime(p.livePosition()))
-    setError(false)
-  }
-  useEffect(() => {
-    if (p.editRequest) start()
-    // 頼まれたときだけ始める
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.editRequest])
-
-  const commit = () => {
-    const v = draft === null ? null : parseTime(draft)
-    if (v === null) return setError(true)
+  const commit = (text: string) => {
+    const v = parseTime(text)
+    if (v === null) return false
     p.onSeek?.(Math.max(0, Math.min(p.duration, v)))
-    setDraft(null)
+    return true
   }
-
   return (
     <>
-      {draft !== null ? (
-        <InputBase
-          autoFocus
-          value={draft}
-          error={error}
-          onChange={(e) => {
-            setDraft(e.target.value)
-            setError(false)
-          }}
-          onFocus={(e) => e.target.select()}
-          onBlur={() => setDraft(null)}
-          onKeyDown={(e) => {
-            e.stopPropagation()
-            if (e.key === 'Enter') commit()
-            else if (e.key === 'Escape') setDraft(null)
-          }}
-          inputProps={{ 'aria-label': p.inputLabel, style: { padding: 0, width: '9ch', fontFamily: 'monospace', fontSize: 'inherit' } }}
-          sx={{ fontSize: 'inherit', lineHeight: 'inherit', verticalAlign: 'baseline', borderBottom: 1, borderColor: error ? 'error.main' : 'primary.main' }}
-        />
-      ) : p.onSeek ? (
-        // ボタンの箱で文字の高さがずれないよう、ふつうの文字と同じ並びにする
-        <ButtonBase
-          component="span"
-          title={p.inputLabel}
-          onClick={start}
-          sx={{ display: 'inline', verticalAlign: 'baseline', font: 'inherit', lineHeight: 'inherit', p: 0, borderRadius: 0.5, '&:hover': { bgcolor: 'action.hover' } }}
-        >
-          {formatTime(now)}
-        </ButtonBase>
-      ) : (
-        formatTime(now)
-      )}{' '}
-      / {formatTime(p.duration)}
+      <InlineEdit text={formatTime(now)} draftOf={() => formatTime(p.livePosition())} onCommit={p.onSeek && commit} label={p.inputLabel} editRequest={p.editRequest} /> / {formatTime(p.duration)}
     </>
   )
 }
