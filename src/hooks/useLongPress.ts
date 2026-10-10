@@ -9,6 +9,24 @@ const DOUBLE_TAP_MS = 300
 const DOUBLE_TAP_PX = 24
 
 /**
+ * 長押しのあと指を離したときのクリックを 1 回だけ捨てる（長押しで開いたメニューが、そのクリックで背景を押したことになって閉じるため）。
+ * 指を離さずに終わったときのため、少したったら捨てるのをやめる
+ */
+function swallowNextClick() {
+  const stop = (e: Event) => {
+    e.stopPropagation()
+    e.preventDefault()
+    done()
+  }
+  const done = () => {
+    window.removeEventListener('click', stop, true)
+    clearTimeout(timer)
+  }
+  window.addEventListener('click', stop, true)
+  const timer = window.setTimeout(done, 3000)
+}
+
+/**
  * 長押しを見分ける。`start` で指を置いた位置と、長押しになったときの処理を渡し、`move` で指の動きを渡す（動きすぎたら取り消す）。
  * 指を離したら `cancel` を呼ぶ。`active` は長押しを待っている間だけ真
  */
@@ -23,6 +41,7 @@ export function useLongPress(ms = LONG_PRESS_MS, slop = LONG_PRESS_SLOP_PX) {
       cancel()
       const timer = window.setTimeout(() => {
         ref.current = null
+        swallowNextClick()
         fire()
       }, ms)
       ref.current = { timer, x, y }
