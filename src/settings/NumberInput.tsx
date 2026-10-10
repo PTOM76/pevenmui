@@ -18,8 +18,7 @@ export function NumberInput(p: { value: number; onChange: (v: number) => void; m
         border: 1,
         borderColor: 'divider',
         borderRadius: 0.5,
-        // 背景は塗らない（置いた欄の色のまま。枠だけで欄とわかる）
-        bgcolor: 'transparent',
+        bgcolor: 'background.default',
         opacity: p.disabled ? 0.5 : 1,
         '&:focus-within': { borderColor: 'primary.main' },
       }}
