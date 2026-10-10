@@ -34,6 +34,11 @@ export { usePersistentNumber, usePanelWidth } from './layout/Splitter'
 // ---- 設定 ----
 export { SettingsDialog, matchCategories, type SettingsCategory } from './settings/SettingsDialog'
 export { NarrowContext, Group, Row, Choice, Check } from './settings/controls'
+export { settingItems, searchKeys, collectItems, type Item, type AnyItem, type ItemGroup, type ValueOf, type ItemsOf, type SettingsOf } from './settings/items'
+export { SettingRow } from './settings/SettingRow'
+export { NumberInput } from './settings/NumberInput'
+export { createSettingsStore } from './settings/store'
+export { useNumberDraft } from './hooks/useNumberDraft'
 export { SearchContext, matches, useHighlight, useHighlighter } from './settings/search'
 
 // ---- キーボードショートカット ----
