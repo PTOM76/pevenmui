@@ -83,3 +83,4 @@ export { TempoField, type TempoCandidate, type TempoFieldLabels, type TempoField
 export { SliderResetContext, useDoubleClickReset } from './settings/sliderReset'
 export { InlineEdit } from './time/InlineEdit'
 export { useLongPress, useDoubleTap, LONG_PRESS_MS, LONG_PRESS_SLOP_PX } from './hooks/useLongPress'
+export { useDialogs, type Dialogs } from './dialog/useDialogs'
