@@ -30,3 +30,4 @@ export { createAddons, addonSize, addonsSupported, type Addons, type AddonsOptio
 export { ADDON_FOLDER_KEY, addonFolderSupported, type AddonFolder } from '../addons/folder'
 export { createZip, type ZipEntry } from './zip'
 export { storageUsage, clearOfflineCache, clearLocalItems, isPersisted, requestPersist, formatMb } from './storage'
+export { slot, configureWindowSlots, acquireSlot, otherWindowsOpen, openWindowCount, slotTag, slotKey, openNewWindow } from './windowSlot'
