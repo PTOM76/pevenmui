@@ -86,3 +86,4 @@ export { useLongPress, useDoubleTap, LONG_PRESS_MS, LONG_PRESS_SLOP_PX } from '.
 export { useDialogs, type Dialogs } from './dialog/useDialogs'
 export { DataRow, DangerButton, DataHeading, DataText } from './settings/DataRow'
 export { EmptyState } from './layout/EmptyState'
+export { WindowLimitScreen } from './layout/WindowLimitScreen'
