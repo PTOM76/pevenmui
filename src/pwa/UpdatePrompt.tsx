@@ -77,7 +77,6 @@ export function UpdatePrompt({ build, devUpdates = false }: { build: string; dev
     <Snackbar open={open} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
       <Alert
         severity={notYet ? 'warning' : 'info'}
-        variant="filled"
         // action を渡すと Alert の閉じるボタンが出なくなるので、更新ボタンの横に自分で置く
         action={
           <>
@@ -90,7 +89,7 @@ export function UpdatePrompt({ build, devUpdates = false }: { build: string; dev
           </>
         }
       >
-        {notYet ? l.updateNotYet : l.updateAvailable}
+        <span className="selectable">{notYet ? l.updateNotYet : l.updateAvailable}</span>
         {!notYet && latest && <span className="selectable">{fill(l.updateAvailableBuild, { from: build, to: latest })}</span>}
       </Alert>
     </Snackbar>
