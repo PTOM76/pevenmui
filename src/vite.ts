@@ -107,11 +107,15 @@ export const ISOLATION_SCRIPT = 'isolation.js'
 /**
  * ページの応答に COOP/COEP を足す Service Worker のスクリプト。GitHub Pages はヘッダーを付けられないため。
  * workbox が返すページ（navigate）と Worker のスクリプトの応答を包むだけで、キャッシュや更新の動きは変えない。
- * Safari は credentialless に未対応で、isolation にならない（今までどおり 1 スレッド）
+ * Safari（iPhone、iPad のブラウザはすべて WebKit）は credentialless に未対応なので、require-corp を返す（ほかのサイトのものは CORP のヘッダーがないと読めないが、アプリのファイルは同じオリジン）
  */
 // sw.js と同じ全体の範囲で動くので、名前がぶつからないよう { } で囲む
 const isolationScript = `{
+const ua = self.navigator.userAgent
+// WebKit（Safari と、iPhone、iPad のブラウザ）。Chrome、Edge も AppleWebKit を名乗るので除く（iPhone、iPad の CriOS、EdgiOS は WebKit なので含める）
+const webkit = /AppleWebKit/.test(ua) && (!/Chrome|Chromium|Edg/.test(ua) || /CriOS|EdgiOS|FxiOS/.test(ua))
 const h = ${JSON.stringify(ISOLATION_HEADERS)}
+if (webkit) h['Cross-Origin-Embedder-Policy'] = 'require-corp'
 const add = (r) => {
   if (!r || r.status === 0 || r.type === 'opaqueredirect') return r
   const headers = new Headers(r.headers)
