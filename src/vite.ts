@@ -106,7 +106,7 @@ export const ISOLATION_SCRIPT = 'isolation.js'
 
 /**
  * ページの応答に COOP/COEP を足す Service Worker のスクリプト。GitHub Pages はヘッダーを付けられないため。
- * workbox が返すページ（navigate）の応答を包むだけで、キャッシュや更新の動きは変えない。
+ * workbox が返すページ（navigate）と Worker のスクリプトの応答を包むだけで、キャッシュや更新の動きは変えない。
  * Safari は credentialless に未対応で、isolation にならない（今までどおり 1 スレッド）
  */
 // sw.js と同じ全体の範囲で動くので、名前がぶつからないよう { } で囲む
@@ -120,7 +120,9 @@ const add = (r) => {
 }
 const respondWith = FetchEvent.prototype.respondWith
 FetchEvent.prototype.respondWith = function (r) {
-  return respondWith.call(this, this.request.mode === 'navigate' ? Promise.resolve(r).then(add) : r)
+  // ページと Worker のスクリプト（isolation のページから作る Worker は、スクリプトにも COEP が要る。ないと読み込めない）
+  const d = this.request.destination
+  return respondWith.call(this, this.request.mode === 'navigate' || d === 'worker' || d === 'sharedworker' ? Promise.resolve(r).then(add) : r)
 }
 }
 `
