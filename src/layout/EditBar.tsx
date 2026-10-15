@@ -5,6 +5,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { pevenFont } from '../tokens'
 
+/** 編集バーを出す設定（auto はスマホとタブレットだけ） */
+export type EditBarSetting = 'auto' | 'on' | 'off'
+
+/** 設定と、タッチの端末かどうかから、編集バーを出すか */
+export const editBarEnabled = (setting: EditBarSetting, touch: boolean) => setting === 'on' || (setting === 'auto' && touch)
+
 /** 区切り線 */
 export const EDIT_BAR_DIVIDER = 'divider'
 
