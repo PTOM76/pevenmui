@@ -35,8 +35,8 @@ export function NoticeMessage(p: NoticeCorner & { message: NoticeMessageData | n
       anchorOrigin={{ vertical: p.vertical ?? 'bottom', horizontal: p.horizontal ?? 'left' }}
       open={!!p.message}
       autoHideDuration={p.autoHideMs === undefined ? (t?.actions ? 10000 : 4000) : p.autoHideMs}
-      // 外を押しても閉じない。閉じるまで出し続ける通知は Esc でも閉じない（利用者が見落としたまま消えないように）
-      onClose={(_, reason) => reason !== 'clickaway' && !(reason === 'escapeKeyDown' && p.autoHideMs === null) && p.onClose()}
+      // 外を押しても閉じない（Esc では閉じる）
+      onClose={(_, reason) => reason !== 'clickaway' && p.onClose()}
     >
       {t ? (
         <Alert
