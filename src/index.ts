@@ -95,4 +95,4 @@ export { SelectionField, type SelectionFieldLabels } from './time/SelectionField
 export { UndoRedoButtons } from './layout/UndoRedoButtons'
 export { EditBar, EDIT_BAR_DIVIDER, editBarEnabled, type EditBarItem, type EditBarSetting } from './layout/EditBar'
 export { useBoxSize } from './hooks/useBoxSize'
-export { NoticeMessage, type NoticeMessageData } from './dialog/NoticeMessage'
+export { NoticeMessage, type NoticeCorner, type NoticeMessageData } from './dialog/NoticeMessage'

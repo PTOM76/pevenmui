@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, CircularProgress, IconButton, Snackbar } from '@mui/material'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import { CircularProgress } from '@mui/material'
+import { NoticeMessage, type NoticeCorner } from '../dialog/NoticeMessage'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { fill, useLabels } from '../labels'
 import { fetchLatestBuild, isNewer, setAppBuild, setDevUpdates, setRegistration, setShowPrompt, updateNow } from './updateCheck'
@@ -15,7 +14,7 @@ const CHECK_INTERVAL_MS = 60 * 60 * 1000
  * メニューの「更新を確認」で見つけたときも、この通知を出す（promptUpdate）。
  * `build` は今動いている版（formatBuild で作る）。`devUpdates` なら、バージョンが同じでコミットだけ違う版（開発版）も知らせる
  */
-export function UpdatePrompt({ build, devUpdates = false }: { build: string; devUpdates?: boolean }) {
+export function UpdatePrompt({ build, devUpdates = false, ...corner }: { build: string; devUpdates?: boolean } & NoticeCorner) {
   const l = useLabels()
   setAppBuild(build)
   setDevUpdates(devUpdates)
@@ -74,24 +73,26 @@ export function UpdatePrompt({ build, devUpdates = false }: { build: string; dev
   }
 
   return (
-    <Snackbar open={open} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-      <Alert
-        severity={notYet ? 'warning' : 'info'}
-        // action を渡すと Alert の閉じるボタンが出なくなるので、更新ボタンの横に自分で置く
-        action={
-          <>
-            <Button color="inherit" size="small" disabled={updating} onClick={() => void update()}>
-              {updating ? <CircularProgress size={14} color="inherit" /> : l.updateReload}
-            </Button>
-            <IconButton color="inherit" size="small" aria-label={l.close} title={l.close} onClick={close}>
-              <FontAwesomeIcon icon={faXmark} />
-            </IconButton>
-          </>
-        }
-      >
-        <span className="selectable">{notYet ? l.updateNotYet : l.updateAvailable}</span>
-        {!notYet && latest && <span className="selectable">{fill(l.updateAvailableBuild, { from: build, to: latest })}</span>}
-      </Alert>
-    </Snackbar>
+    <NoticeMessage
+      horizontal="right"
+      {...corner}
+      autoHideMs={null}
+      onClose={close}
+      message={
+        open
+          ? {
+              severity: notYet ? 'warning' : 'info',
+              message: (
+                <>
+                  {notYet ? l.updateNotYet : l.updateAvailable}
+                  {!notYet && latest && fill(l.updateAvailableBuild, { from: build, to: latest })}
+                </>
+              ),
+              // 更新中は通知を残す（更新できなかったときに「まだ」と出し直すため）
+              actions: [{ label: updating ? <CircularProgress size={14} color="inherit" /> : l.updateReload, disabled: updating, keepOpen: true, onClick: () => void update() }],
+            }
+          : null
+      }
+    />
   )
 }
