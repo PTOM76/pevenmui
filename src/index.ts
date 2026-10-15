@@ -25,6 +25,7 @@ export { DrillMenu } from './menu/DrillMenu'
 // ---- 画面の配置 ----
 export { AppHeader, HeaderIcon, useMobileLayout } from './layout/AppHeader'
 export { OverflowRow } from './layout/OverflowRow'
+export { ScrollBar } from './layout/ScrollBar'
 export { StatusBar, StatusItem, StatusButton, StatusSpacer } from './layout/StatusBar'
 export { BottomBar } from './layout/BottomBar'
 export { DesktopLayout } from './layout/DesktopLayout'
