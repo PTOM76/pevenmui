@@ -44,7 +44,7 @@ export { SearchContext, matches, useHighlight, useHighlighter } from './settings
 // ---- キーボードショートカット ----
 export { KeymapEditor } from './keymap/KeymapEditor'
 export { ShortcutsDialog } from './keymap/ShortcutsDialog'
-export { useShortcuts, type ShortcutHandlers } from './keymap/useShortcuts'
+export { useShortcuts, textSelected, type ShortcutHandlers } from './keymap/useShortcuts'
 export { resolveKeymap, actionKeys, comboOf, actionOf, comboLabel, keyLabelOf, keymapRows, type KeyAction, type Keymap, type KeymapOverrides, type DefaultKeys } from './keymap/keymap'
 
 // ---- ダイアログ、別ウィンドウ ----

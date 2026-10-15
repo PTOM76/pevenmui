@@ -4,6 +4,12 @@ import { actionOf, comboOf, type Keymap } from './keymap'
 /** 操作ごとの処理。今は使えない操作は undefined にする（そのキーはブラウザの既定の動きのまま。Tab のフォーカス移動など） */
 export type ShortcutHandlers<Id extends string = string> = Partial<Record<Id, (() => void) | undefined>>
 
+/** 画面の文字を選んでいるか（コピー、切り取りは、ブラウザの文字のコピーに任せるかどうかの判定。波形のコピーなどと重ならないように） */
+export function textSelected(): boolean {
+  const sel = window.getSelection()
+  return !!sel && !sel.isCollapsed && sel.toString() !== ''
+}
+
 /**
  * キーボード操作。処理を持たない操作のキーは何もしないので、操作を持つ場所ごとに呼んでよい。
  * 入力欄、ダイアログ、メニューの中のキーは扱わない
@@ -23,8 +29,7 @@ export function useShortcuts<Id extends string>(keymap: Keymap<Id>, handlers: Sh
       const action = id && ref.current.handlers[id]
       if (!action) return
       // 画面の文字を選んでいるときのコピー、切り取りは、ブラウザの文字のコピーに任せる
-      const sel = window.getSelection()
-      if ((id === 'copy' || id === 'cut') && sel && !sel.isCollapsed) return
+      if ((id === 'copy' || id === 'cut') && textSelected()) return
       e.preventDefault()
       action()
     }
