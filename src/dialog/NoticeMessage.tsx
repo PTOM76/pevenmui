@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
 import { useLabels } from '../labels'
 
-export interface ToastData {
+export interface NoticeMessageData {
   severity: AlertColor
   message: string
   /** 通知の中のボタン。押すと通知を閉じてから実行する */
@@ -15,9 +15,9 @@ export interface ToastData {
  * 通知。色は MUI の標準の Alert（ライトは淡い地、ダークは暗い地に色を重ねる）。
  * `top` なら上に出す（スマホで下の再生バーを隠さないため）。ボタンのある通知は押す間があるよう長めに出す
  */
-export function Toast(p: { toast: ToastData | null; onClose: () => void; top?: boolean; autoHideMs?: number }) {
+export function NoticeMessage(p: { message: NoticeMessageData | null; onClose: () => void; top?: boolean; autoHideMs?: number }) {
   const l = useLabels()
-  const t = p.toast
+  const t = p.message
   const close = (
     <IconButton color="inherit" size="small" aria-label={l.close} title={l.close} onClick={p.onClose}>
       <FontAwesomeIcon icon={faXmark} />
