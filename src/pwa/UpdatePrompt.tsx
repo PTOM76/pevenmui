@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CircularProgress } from '@mui/material'
+import { startJob } from '../progress/jobs'
 import { NoticeMessage, type NoticeCorner } from '../dialog/NoticeMessage'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { fill, useLabels } from '../labels'
@@ -59,10 +59,14 @@ export function UpdatePrompt({ build, devUpdates = false, ...corner }: { build: 
   const [updating, setUpdating] = useState(false)
   const [notYet, setNotYet] = useState(false)
   const update = async () => {
+    // 通知は閉じ、進み具合は処理のゲージに出す（割合は分からない）。入れ替えられたら読み込み直すので、ゲージはそのまま消える
     setUpdating(true)
     setNotYet(false)
+    const job = startJob('update', l.updating)
+    job.update(-1)
     const ok = await updateNow()
     if (!ok) {
+      job.end()
       setUpdating(false)
       setNotYet(true)
     }
@@ -79,7 +83,7 @@ export function UpdatePrompt({ build, devUpdates = false, ...corner }: { build: 
       autoHideMs={null}
       onClose={close}
       message={
-        open
+        open && !updating
           ? {
               severity: notYet ? 'warning' : 'info',
               message: (
@@ -88,8 +92,8 @@ export function UpdatePrompt({ build, devUpdates = false, ...corner }: { build: 
                   {!notYet && latest && fill(l.updateAvailableBuild, { from: build, to: latest })}
                 </>
               ),
-              // 更新中は通知を残す（更新できなかったときに「まだ」と出し直すため）
-              actions: [{ label: updating ? <CircularProgress size={14} color="inherit" /> : l.updateReload, disabled: updating, keepOpen: true, onClick: () => void update() }],
+              // 押すと通知は閉じ、更新中はゲージに出す（更新できなかったときは「まだ」と出し直す）
+              actions: [{ label: l.updateReload, onClick: () => void update() }],
             }
           : null
       }

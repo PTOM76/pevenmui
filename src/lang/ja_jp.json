@@ -13,6 +13,7 @@
   "updateAvailable": "新しいバージョンがあります",
   "updateAvailableBuild": "（{from} → {to}）",
   "updateReload": "更新",
+  "updating": "更新中…",
   "updateCheck": "今すぐ確認",
   "updateLatest": "最新バージョンです",
   "updateUnsupported": "この環境では確認できません",

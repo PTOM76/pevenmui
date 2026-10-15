@@ -13,6 +13,7 @@
   "updateAvailable": "A new version is available",
   "updateAvailableBuild": " ({from} → {to})",
   "updateReload": "Update",
+  "updating": "Updating…",
   "updateCheck": "Check now",
   "updateLatest": "You are on the latest version",
   "updateUnsupported": "Cannot check in this environment",
