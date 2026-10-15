@@ -1,5 +1,5 @@
 // 画面の隅に出す通知（メッセージと、押せるボタン。時間が来るか、閉じるボタンで消える）。文字は選択してコピーできる
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Alert, Button, IconButton, Snackbar, type AlertColor } from '@mui/material'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
@@ -26,13 +26,17 @@ export interface NoticeCorner {
  */
 export function NoticeMessage(p: NoticeCorner & { message: NoticeMessageData | null; onClose: () => void; autoHideMs?: number | null }) {
   const l = useLabels()
-  const t = p.message
+  // 閉じるアニメーションの間も中身を残す（先に消えて空の枠だけが残らないように）
+  const last = useRef(p.message)
+  if (p.message) last.current = p.message
+  const t = p.message ?? last.current
   return (
     <Snackbar
       anchorOrigin={{ vertical: p.vertical ?? 'bottom', horizontal: p.horizontal ?? 'left' }}
-      open={!!t}
+      open={!!p.message}
       autoHideDuration={p.autoHideMs === undefined ? (t?.actions ? 10000 : 4000) : p.autoHideMs}
-      onClose={(_, reason) => reason !== 'clickaway' && p.onClose()}
+      // 外を押しても閉じない。閉じるまで出し続ける通知は Esc でも閉じない（利用者が見落としたまま消えないように）
+      onClose={(_, reason) => reason !== 'clickaway' && !(reason === 'escapeKeyDown' && p.autoHideMs === null) && p.onClose()}
     >
       {t ? (
         <Alert
