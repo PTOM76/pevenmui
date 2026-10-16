@@ -5,13 +5,17 @@ import { pickOpenFiles } from '../web/fileAccess'
  * ファイル選択ダイアログ（複数選べる）。`input` を画面のどこかに置き、`open()` で開く。
  * 使えるブラウザでは、フォルダを覚える選択画面（File System Access API）を使い、選んだ最初のファイルを最近使用したファイルに記録する
  */
+/** iPhone、iPad か（iPadOS は Mac と名乗るので、タッチの数でも見る） */
+const isIos = () => typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+
 export function useFilesPicker(accept: string, onFiles: (files: File[]) => void, description = '', multiple = true) {
   const ref = useRef<HTMLInputElement>(null)
   const input = (
     <input
       ref={ref}
       type="file"
-      accept={accept}
+      // iPhone、iPad は、知らない拡張子（.wvst など）を accept に入れると、そのファイルを選べなくなる。絞らずに全部選べるようにする（選んだあとに、アプリが形を確かめる）
+      accept={isIos() ? undefined : accept}
       multiple={multiple}
       hidden
       onChange={(e) => {
