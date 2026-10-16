@@ -28,6 +28,7 @@ export {
 export { canSaveToFolder, chooseSaveFolder, folderFileTarget, saveToFolder, savedFolderName } from './folderSave'
 export { createAddons, addonSize, addonsSupported, type Addons, type AddonsOptions, type AddonInfo, type AddonManifest, type AddonFile } from '../addons/store'
 export { ADDON_FOLDER_KEY, addonFolderSupported, type AddonFolder } from '../addons/folder'
+export { createPackageStore, packageFolderOf, type PackageFolder, type PackageStore, type PackageStoreOptions } from './packageStore'
 export { createZip, type ZipEntry } from './zip'
 export { storageUsage, clearOfflineCache, clearLocalItems, isPersisted, requestPersist, formatMb } from './storage'
 export { slot, configureWindowSlots, acquireSlot, otherWindowsOpen, openWindowCount, slotTag, slotKey, openNewWindow } from './windowSlot'

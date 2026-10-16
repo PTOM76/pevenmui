@@ -16,6 +16,7 @@ interface DirHandle {
   getDirectoryHandle(name: string, o?: { create?: boolean }): Promise<DirHandle>
   getFileHandle(name: string, o?: { create?: boolean }): Promise<{ getFile(): Promise<File>; createWritable(): Promise<{ write(d: BufferSource | Blob): Promise<void>; close(): Promise<void> }> }>
   removeEntry(name: string, o?: { recursive?: boolean }): Promise<void>
+  values(): AsyncIterable<{ kind: 'file' | 'directory'; name: string }>
 }
 type DirWindow = Window & { showDirectoryPicker?: (o?: { id?: string; mode?: 'readwrite' }) => Promise<DirHandle> }
 
@@ -95,6 +96,13 @@ export function createAddonFolder(idb: Idb, dirName: string) {
     async read(id: string, path: string): Promise<File | null> {
       const at = await locate(id, path, false)
       return at ? at[0].getFileHandle(at[1]).then((h) => h.getFile(), () => null) : null
+    },
+    /** 置いてある id の一覧（フォルダーの名前） */
+    async list(): Promise<string[]> {
+      const dir = await root(false)
+      const ids: string[] = []
+      if (dir) for await (const e of dir.values()) if (e.kind === 'directory') ids.push(e.name)
+      return ids
     },
     async remove(id: string) {
       await (await root(false))?.removeEntry(id, { recursive: true }).catch(() => {})
