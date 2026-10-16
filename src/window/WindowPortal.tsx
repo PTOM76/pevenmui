@@ -135,6 +135,23 @@ function loadPlacement(name: string): Placement | null {
   }
 }
 
+/** 利用者が窓の大きさを自分で変えたか（変えたら、高さを中身に合わせ直さず、その大きさを使う） */
+const manualKey = (name: string) => `${storageKey(name)}.manual`
+const isManual = (name: string) => {
+  try {
+    return localStorage.getItem(manualKey(name)) === '1'
+  } catch {
+    return false
+  }
+}
+function setManual(name: string) {
+  try {
+    localStorage.setItem(manualKey(name), '1')
+  } catch {
+    // 覚えられなくても、この窓を開いている間は変えない
+  }
+}
+
 function savePlacement(name: string, p: Placement) {
   try {
     localStorage.setItem(storageKey(name), JSON.stringify(p))
@@ -314,7 +331,16 @@ export function WindowPortal(p: Props) {
   useEffect(() => {
     const win = opened?.cache && opened.root.ownerDocument.defaultView
     if (!p.fitHeight || !win || p.mode === 'tab' || p.mode === 'pip') return
+    // 利用者が窓の大きさを変えたら、以後は中身に合わせ直さない（合わせ直すと、変えた大きさがすぐ元に戻ってしまう）。自分で変えた分は除く
+    let lastFit = 0
+    const opened0 = performance.now()
+    const onResize = () => {
+      // 開いた直後の大きさの調整は、利用者の操作ではない
+      if (performance.now() - opened0 > 1500 && performance.now() - lastFit > 500) setManual(p.name)
+    }
+    win.addEventListener('resize', onResize)
     const fit = () => {
+      if (isManual(p.name)) return
       const body = opened.root.firstElementChild as HTMLElement | null
       if (!body) return
       // 本文は窓いっぱいに伸ばしているので、測る間だけ伸ばすのをやめて本来の高さにする
@@ -327,7 +353,10 @@ export function WindowPortal(p: Props) {
       parts.forEach((e, i) => (e.style.flex = saved[i]))
       parts.forEach((e, i) => (e.scrollTop = scrolls[i]))
       const target = Math.min(need, win.screen.availHeight * 0.9)
-      if (need > 0 && Math.abs(target - win.innerHeight) > 8) win.resizeBy(0, Math.round(target - win.innerHeight))
+      if (need > 0 && Math.abs(target - win.innerHeight) > 8) {
+        lastFit = performance.now()
+        win.resizeBy(0, Math.round(target - win.innerHeight))
+      }
     }
     let raf = 0
     const schedule = () => {
@@ -339,6 +368,7 @@ export function WindowPortal(p: Props) {
     observer.observe(opened.root, { childList: true, subtree: true })
     return () => {
       observer.disconnect()
+      win.removeEventListener('resize', onResize)
       win.cancelAnimationFrame(raf)
     }
   }, [opened, p.fitHeight, p.mode])
