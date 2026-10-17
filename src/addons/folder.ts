@@ -25,25 +25,29 @@ export const addonFolderSupported = (win: Window = window) => typeof win !== 'un
 
 export type AddonFolder = ReturnType<typeof createAddonFolder>
 
-/** `idb` にハンドルを残し、選んだフォルダーの中の `dirName` に置く */
-export function createAddonFolder(idb: Idb, dirName: string) {
+/**
+ * `idb` にハンドルを残し、選んだフォルダーの中の `dirName` に置く。`oldDirs` は前の置き場所（読む、消すときだけ見る）。
+ * `dirName` をアプリの間で共通にすると、同じフォルダーを選んだアプリどうしで同じ追加機能を使える
+ */
+export function createAddonFolder(idb: Idb, dirName: string, oldDirs: string[] = []) {
   // 設定がオンか（アプリが設定から入れる）
   let enabled = false
 
   const saved = async () => ((await idb.get(ADDON_FOLDER_KEY).catch(() => null)) as DirHandle | null) ?? null
 
-  // 許可があるときの、追加機能を置くフォルダー（`create` なら作る）。使えなければ null
-  const root = async (create: boolean): Promise<DirHandle | null> => {
+  const granted = async () => {
     const dir = await saved()
-    if (!dir || (await dir.queryPermission({ mode: 'readwrite' })) !== 'granted') return null
-    return dir.getDirectoryHandle(dirName, { create }).catch(() => null)
+    return dir && (await dir.queryPermission({ mode: 'readwrite' })) === 'granted' ? dir : null
   }
-  const addonDir = async (id: string, create: boolean) => (await root(create))?.getDirectoryHandle(id, { create }).catch(() => null) ?? null
+  // 許可があるときの、追加機能を置くフォルダー（`create` なら作る）。使えなければ null
+  const root = async (create: boolean, name = dirName): Promise<DirHandle | null> => (await granted())?.getDirectoryHandle(name, { create }).catch(() => null) ?? null
+  // 今の置き場所と、前の置き場所（あるものだけ）
+  const roots = async () => (await Promise.all([dirName, ...oldDirs].map((n) => root(false, n)))).filter((d): d is DirHandle => !!d)
 
   // `path`（a/b.wasm）のファイルの、入っているフォルダーと名前
-  const locate = async (id: string, path: string, create: boolean): Promise<[DirHandle, string] | null> => {
+  const locateIn = async (top: DirHandle | null, id: string, path: string, create: boolean): Promise<[DirHandle, string] | null> => {
     const parts = path.split('/').filter(Boolean)
-    let dir = await addonDir(id, create)
+    let dir = top ? await top.getDirectoryHandle(id, { create }).catch(() => null) : null
     for (const p of parts.slice(0, -1)) dir = dir ? await dir.getDirectoryHandle(p, { create }).catch(() => null) : null
     return dir ? [dir, parts[parts.length - 1]] : null
   }
@@ -88,31 +92,34 @@ export function createAddonFolder(idb: Idb, dirName: string) {
     /** フォルダーを選んでいて、書き込みの許可がある（設定を保存する前でも、移す操作で使う） */
     writable: async () => !!(await root(true)),
     async write(id: string, path: string, data: ArrayBuffer | string) {
-      const at = await locate(id, path, true)
+      const at = await locateIn(await root(true), id, path, true)
       if (!at) throw new Error('追加機能の保存先のフォルダーに書き込めません')
       const w = await (await at[0].getFileHandle(at[1], { create: true })).createWritable()
       await w.write(typeof data === 'string' ? new Blob([data]) : data)
       await w.close()
     },
-    /** ファイルを読む（なければ null） */
+    /** ファイルを読む（今の置き場所、前の置き場所の順に探す。なければ null） */
     async read(id: string, path: string): Promise<File | null> {
-      const at = await locate(id, path, false)
-      return at ? at[0].getFileHandle(at[1]).then((h) => h.getFile(), () => null) : null
+      for (const top of await roots()) {
+        const at = await locateIn(top, id, path, false)
+        const file = at && (await at[0].getFileHandle(at[1]).then((h) => h.getFile(), () => null))
+        if (file) return file
+      }
+      return null
     },
     /** 置いてある id の一覧（フォルダーの名前） */
     async list(): Promise<string[]> {
-      const dir = await root(false)
-      const ids: string[] = []
-      if (dir) for await (const e of dir.values()) if (e.kind === 'directory') ids.push(e.name)
-      return ids
+      const ids = new Set<string>()
+      for (const dir of await roots()) for await (const e of dir.values()) if (e.kind === 'directory') ids.add(e.name)
+      return [...ids]
     },
     async remove(id: string) {
-      await (await root(false))?.removeEntry(id, { recursive: true }).catch(() => {})
+      for (const dir of await roots()) await dir.removeEntry(id, { recursive: true }).catch(() => {})
     },
-    /** 選んだフォルダーの中の `dirName` をすべて消す */
+    /** 選んだフォルダーの中の置き場所（前のものも）をすべて消す */
     async clear() {
-      const dir = await saved()
-      if (dir && (await dir.queryPermission({ mode: 'readwrite' })) === 'granted') await dir.removeEntry(dirName, { recursive: true }).catch(() => {})
+      const dir = await granted()
+      if (dir) for (const n of [dirName, ...oldDirs]) await dir.removeEntry(n, { recursive: true }).catch(() => {})
     },
   }
 }

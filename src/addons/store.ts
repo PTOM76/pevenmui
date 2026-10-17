@@ -46,6 +46,11 @@ export interface AddonsOptions<N extends string> {
   addons: AddonInfo<N>[]
   /** 配信の基準の URL（`import.meta.env.BASE_URL`） */
   base: string
+  /**
+   * 選んだフォルダーの中の置き場所の名前（試験的。pevenAddonsRoute と一致させる）。アプリの間で共通にすると、同じフォルダーを選んだアプリどうしで
+   * 同じ追加機能を使える。既定は `<id>-addons`（ほかの名前にしても、前のものは読める）
+   */
+  folderName?: string
 }
 
 export const addonSize = (m: AddonManifest) => m.files.reduce((s, f) => s + f.size, 0)
@@ -86,7 +91,7 @@ export type Addons<N extends string = string> = ReturnType<typeof createAddons<N
 export function createAddons<N extends string>(o: AddonsOptions<N>) {
   const ADDONS = o.addons
   const cacheName = `${o.appId}-addons`
-  const folder = createAddonFolder(o.idb, cacheName)
+  const folder = createAddonFolder(o.idb, o.folderName ?? cacheName, o.folderName ? [cacheName] : [])
   const baseUrl = (id: string) => new URL(`${o.base}addons/${id}/`, location.href)
   const manifestUrl = (id: string) => new URL('manifest.json', baseUrl(id)).href
 

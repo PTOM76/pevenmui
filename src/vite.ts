@@ -54,8 +54,10 @@ export function pevenManifest(info: AppInfo) {
  * （CacheFirst だと取ったものを勝手に保存し、中断したファイルや更新確認のマニフェストが残る）。
  * workbox は関数を文字列にして sw.js に埋め込むので、アプリの値を埋めた文字列から作る
  */
-export function pevenAddonsRoute(appId: string) {
+export function pevenAddonsRoute(appId: string, folderName?: string) {
   const cacheName = `${appId}-addons`
+  // フォルダーの中の置き場所（共通の名前、前のアプリごとの名前の順に探す。createAddons の folderName）
+  const dirs = folderName ? [folderName, cacheName] : [cacheName]
   const src = `async ({ request, url }) => {
     // ignoreVary: サーバーが付ける Vary（Origin / Accept-Encoding）で照合が外れないようにする
     const hit = await caches.match(request, { cacheName: ${JSON.stringify(cacheName)}, ignoreVary: true })
@@ -77,9 +79,18 @@ export function pevenAddonsRoute(appId: string) {
         if (dir && (await dir.queryPermission({ mode: 'readwrite' })) === 'granted') {
           const rel = decodeURIComponent(url.pathname.slice(new URL(registration.scope).pathname.length + 'addons/'.length))
           const parts = rel.split('/')
-          let h = await dir.getDirectoryHandle(${JSON.stringify(cacheName)})
-          for (const p of parts.slice(0, -1)) h = await h.getDirectoryHandle(p)
-          const file = await (await h.getFileHandle(parts[parts.length - 1])).getFile()
+          let file = null
+          for (const name of ${JSON.stringify(dirs)}) {
+            try {
+              let h = await dir.getDirectoryHandle(name)
+              for (const p of parts.slice(0, -1)) h = await h.getDirectoryHandle(p)
+              file = await (await h.getFileHandle(parts[parts.length - 1])).getFile()
+              break
+            } catch {
+              // 次の置き場所を探す
+            }
+          }
+          if (!file) throw new Error('not found')
           const ext = rel.slice(rel.lastIndexOf('.') + 1)
           const types = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' }
           return new Response(file, { headers: { 'content-type': types[ext] ?? 'application/octet-stream' } })
