@@ -22,10 +22,10 @@ export interface EditBarItem {
   disabled?: boolean
 }
 
-/** ボタンの列。EDIT_BAR_DIVIDER を入れると区切り線になる。children は列の最後に足す */
-export function EditBar(p: { items: (EditBarItem | typeof EDIT_BAR_DIVIDER)[]; children?: ReactNode }) {
+/** ボタンの列。EDIT_BAR_DIVIDER を入れると区切り線になる。children は列の最後に足す。top は画面の上に置くとき（境界の線を下に引く） */
+export function EditBar(p: { items: (EditBarItem | typeof EDIT_BAR_DIVIDER)[]; children?: ReactNode; top?: boolean }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', overflowX: 'auto', gap: 0.25, px: 0.5, py: 0.25, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', overflowX: 'auto', gap: 0.25, px: 0.5, py: 0.25, [p.top ? 'borderBottom' : 'borderTop']: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0 }}>
       {p.items.map((it, i) =>
         it === EDIT_BAR_DIVIDER ? (
           <Box key={`d${i}`} sx={{ width: '1px', alignSelf: 'stretch', my: 0.75, bgcolor: 'divider', flexShrink: 0 }} />
