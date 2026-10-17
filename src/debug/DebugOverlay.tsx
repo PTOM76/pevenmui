@@ -24,9 +24,9 @@ type MemoryInfo = { usedJSHeapSize: number }
 
 /**
  * デバッグ表示（画面の左下）。FPS・一番重かったフレーム・部品の描画回数・
- * 長いタスク・メモリ・DSP の処理時間・画面が止まった記録を出す。文字は選んでコピーできる（不具合の報告に貼る）
+ * 長いタスク・メモリ・DSP の処理時間・画面が止まった記録を出す。extra はアプリが足す行（表示を更新するたびに呼ぶ。出していないときは呼ばない）。文字は選んでコピーできる（不具合の報告に貼る）
  */
-export function DebugOverlay({ build }: { build: string }) {
+export function DebugOverlay({ build, extra }: { build: string; extra?: () => string[] }) {
   const [stats, setStats] = useState<Stats | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   // ドラッグで選んでいる途中も書き換えない
@@ -115,6 +115,7 @@ export function DebugOverlay({ build }: { build: string }) {
     ...(memoryUsage().size ? [`mem total ${([...memoryUsage().values()].reduce((a, b) => a + b, 0) / 2 ** 20).toFixed(0)}MB`] : []),
     ...jobs.map((j) => `dsp ${j.kind} ${j.ms.toFixed(0)}ms`),
     ...audioContextStates(),
+    ...(extra?.() ?? []),
     // 画面が止まった記録と、その間に始まった処理
     ...recentStalls().map(
       (st) => `stall ${st.ms.toFixed(0)}ms @${st.at.toFixed(0)}s${st.heapMb !== null ? ` heap ${st.heapMb.toFixed(0)}MB` : ''}: ${st.during.join(', ')}`,
