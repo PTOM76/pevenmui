@@ -65,5 +65,8 @@
   "addonDelete": "삭제",
   "addonFolderMove": "설치된 것 이동({n}건)",
   "addonFolderMoving": "이동 중… {done}/{total}",
-  "addonFolderMoved": "{n}건을 이 폴더로 이동했습니다"
+  "addonFolderMoved": "{n}건을 이 폴더로 이동했습니다",
+  "dataFolderFound": "지정한 폴더에 이전 설정과 작업 데이터가 있습니다",
+  "dataFolderOverwrite": "덮어쓰기",
+  "dataFolderRestore": "되돌리기"
 }

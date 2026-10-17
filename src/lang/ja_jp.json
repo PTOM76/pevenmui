@@ -65,5 +65,8 @@
   "addonDelete": "削除",
   "addonFolderMove": "導入済みのものを移動（{n}件）",
   "addonFolderMoving": "移動しています… {done}/{total}",
-  "addonFolderMoved": "{n}件をこのフォルダーへ移動しました"
+  "addonFolderMoved": "{n}件をこのフォルダーへ移動しました",
+  "dataFolderFound": "指定したフォルダーに、以前の設定と作業データがあります",
+  "dataFolderOverwrite": "上書き",
+  "dataFolderRestore": "戻す"
 }

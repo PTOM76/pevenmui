@@ -85,6 +85,8 @@ export function createAddonFolder(idb: Idb, dirName: string) {
     },
     /** 導入でフォルダーを使うか（設定がオンで、フォルダーを選んでいて、許可がある） */
     installsTo: async () => enabled && !!(await root(true)),
+    /** フォルダーを選んでいて、書き込みの許可がある（設定を保存する前でも、移す操作で使う） */
+    writable: async () => !!(await root(true)),
     async write(id: string, path: string, data: ArrayBuffer | string) {
       const at = await locate(id, path, true)
       if (!at) throw new Error('追加機能の保存先のフォルダーに書き込めません')

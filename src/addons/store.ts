@@ -182,7 +182,8 @@ export function createAddons<N extends string>(o: AddonsOptions<N>) {
    * 途中で失敗しても、Cache Storage のものは残るので使い続けられる。`onProgress(移した数, 全部の数)`。移した数を返す
    */
   const moveToFolder = async (onProgress?: (done: number, total: number) => void): Promise<number> => {
-    if (!(await folder.installsTo())) throw new Error('追加機能の保存先のフォルダーに書き込めません')
+    // 設定画面の下書きでオンにしただけ（保存の前）でも移せるように、設定のオンは見ない
+    if (!(await folder.writable())) throw new Error('追加機能の保存先のフォルダーに書き込めません')
     const ids = await cachedIds()
     const cache = await caches.open(cacheName)
     for (const [i, id] of ids.entries()) {

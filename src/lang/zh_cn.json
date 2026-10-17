@@ -65,5 +65,8 @@
   "addonDelete": "删除",
   "addonFolderMove": "移动已安装的（{n} 项）",
   "addonFolderMoving": "正在移动… {done}/{total}",
-  "addonFolderMoved": "已将 {n} 项移动到此文件夹"
+  "addonFolderMoved": "已将 {n} 项移动到此文件夹",
+  "dataFolderFound": "指定的文件夹中有以前的设置和工作数据",
+  "dataFolderOverwrite": "覆盖",
+  "dataFolderRestore": "恢复"
 }

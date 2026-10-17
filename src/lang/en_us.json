@@ -65,5 +65,8 @@
   "addonDelete": "Delete",
   "addonFolderMove": "Move installed ({n})",
   "addonFolderMoving": "Moving… {done}/{total}",
-  "addonFolderMoved": "Moved {n} to this folder"
+  "addonFolderMoved": "Moved {n} to this folder",
+  "dataFolderFound": "The specified folder contains earlier settings and work data",
+  "dataFolderOverwrite": "Overwrite",
+  "dataFolderRestore": "Restore"
 }

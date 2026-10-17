@@ -73,6 +73,7 @@ export { AddonsContext, useAddons, type AddonsContextValue } from './addons/cont
 export { useAddonInstall } from './addons/AddonInstallDialog'
 export { AddonSection } from './addons/AddonSection'
 export { AddonFolderRow } from './addons/AddonFolderRow'
+export { useAddonFolderSync, type AddonFolderSyncOptions } from './addons/useAddonFolderSync'
 export { useDownload, useDownloadingIds, isDownloading, cancelDownload, type Download } from './addons/downloads'
 
 // 時間の表示
