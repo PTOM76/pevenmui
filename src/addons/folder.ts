@@ -16,7 +16,7 @@ interface DirHandle {
   getDirectoryHandle(name: string, o?: { create?: boolean }): Promise<DirHandle>
   getFileHandle(name: string, o?: { create?: boolean }): Promise<{ getFile(): Promise<File>; createWritable(): Promise<{ write(d: BufferSource | Blob): Promise<void>; close(): Promise<void> }> }>
   removeEntry(name: string, o?: { recursive?: boolean }): Promise<void>
-  values(): AsyncIterable<{ kind: 'file' | 'directory'; name: string }>
+  values(): AsyncIterable<{ kind: 'file'; name: string; getFile(): Promise<File> } | { kind: 'directory'; name: string }>
 }
 type DirWindow = Window & { showDirectoryPicker?: (o?: { id?: string; mode?: 'readwrite' }) => Promise<DirHandle> }
 
@@ -139,7 +139,13 @@ export function createAddonFolder(idb: Idb, dirName: string, oldDirs: string[] =
         let file: File | null = null
         if (at) {
           try {
-            file = await (await at[0].getFileHandle(at[1])).getFile()
+            // Enumerating avoids browsers that reject otherwise valid names in getFileHandle.
+            for await (const entry of at[0].values()) {
+              if (entry.kind === 'file' && entry.name === at[1]) {
+                file = await entry.getFile()
+                break
+              }
+            }
           } catch (e) {
             if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
               console.error('Failed to read addon file from selected folder', {
