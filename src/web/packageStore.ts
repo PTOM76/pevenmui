@@ -27,28 +27,47 @@ export function createPackageStore(o: PackageStoreOptions) {
   const open = () => caches.open(o.cache)
   const supported = () => typeof caches !== 'undefined'
 
-  /** 置いてあるファイルを読む。Cache Storage になければフォルダーから読み、あれば Cache Storage にも写す（次からネットも許可も要らない） */
+  /** 通常は Cache Storage から読み、フォルダーが有効ならそちらを優先する */
   async function get(id: string, path: string): Promise<ArrayBuffer | null> {
+    const folderFirst = !!o.folder && (await o.folder.installsTo())
+    if (folderFirst) {
+      const file = await o.folder!.read(id, path).catch(() => null)
+      if (file) return file.arrayBuffer()
+    }
     if (supported()) {
-      const hit = await (await open()).match(urlOf(o.cache, id, path))
+      const hit = await (await open()).match(urlOf(o.cache, id, path)).catch((e) => {
+        if (!o.folder) throw e
+        return undefined
+      })
       if (hit) return hit.arrayBuffer()
     }
     const file = await o.folder?.read(id, path).catch(() => null)
     if (!file) return null
     const buf = await file.arrayBuffer()
-    if (supported()) await (await open()).put(urlOf(o.cache, id, path), new Response(buf))
+    if (supported() && !folderFirst) {
+      await (await open()).put(urlOf(o.cache, id, path), new Response(buf)).catch((e) => console.warn('package cache mirror failed', e))
+    }
     return buf
   }
 
   return {
-    /** id のファイル一式を置く（同じ id は置き換える）。フォルダーが使えるときはそこにも置く */
+    /** id のファイル一式を置く（同じ id は置き換える）。フォルダーが有効なら先に保存し、Cache Storage に収まらなくても使えるようにする */
     async put(id: string, files: Record<string, string | ArrayBuffer>) {
-      await this.remove(id, false)
-      if (supported()) {
+      const folderFirst = !!o.folder && (await o.folder.installsTo())
+      if (folderFirst) for (const [path, data] of Object.entries(files)) await o.folder!.write(id, path, data)
+      if (!supported()) {
+        if (folderFirst) return false
+        throw new Error('Cache Storage is unavailable and no plugin folder is enabled')
+      }
+      try {
+        await this.remove(id, false)
         const cache = await open()
         for (const [path, data] of Object.entries(files)) await cache.put(urlOf(o.cache, id, path), new Response(data))
+        return true
+      } catch (e) {
+        if (folderFirst) return false
+        throw e
       }
-      if (o.folder && (await o.folder.installsTo())) for (const [path, data] of Object.entries(files)) await o.folder.write(id, path, data)
     },
     get,
     async getText(id: string, path: string) {
@@ -60,7 +79,12 @@ export function createPackageStore(o: PackageStoreOptions) {
       const set = new Set<string>()
       if (supported()) {
         const prefix = `https://packages.invalid/${encodeURIComponent(o.cache)}/`
-        for (const req of await (await open()).keys()) if (req.url.startsWith(prefix)) set.add(decodeURIComponent(req.url.slice(prefix.length).split('/')[0]))
+        try {
+          for (const req of await (await open()).keys()) if (req.url.startsWith(prefix)) set.add(decodeURIComponent(req.url.slice(prefix.length).split('/')[0]))
+        } catch (e) {
+          if (!o.folder) throw e
+          console.warn('package cache listing failed; using the selected folder', e)
+        }
       }
       for (const id of (await o.folder?.list().catch(() => [])) ?? []) set.add(id)
       return [...set].sort()
