@@ -59,9 +59,17 @@ async function writeFile(dir: FileSystemDirectoryHandle, name: string, data: Blo
   await w.close()
 }
 
-// キーはファイル名に使えない文字（: や @）を含むので符号化する。音声は .clip、それ以外は .json
-const fileOf = (key: string, clip: boolean) => `${encodeURIComponent(key)}${clip ? '.clip' : '.json'}`
-const keyOf = (name: string) => decodeURIComponent(name.replace(/\.(clip|json)$/, ''))
+// 16 進数だけの名前なら Windows の禁止文字や URI の % がファイル名に入らない
+const encodedKey = (key: string) => `key-${[...new TextEncoder().encode(key)].map((b) => b.toString(16).padStart(2, '0')).join('')}`
+const fileOf = (key: string, clip: boolean) => `${encodedKey(key)}${clip ? '.clip' : '.json'}`
+const legacyFileOf = (key: string, clip: boolean) => `${encodeURIComponent(key)}${clip ? '.clip' : '.json'}`
+const keyOf = (name: string) => {
+  const stem = name.replace(/\.(clip|json)$/, '')
+  if (!stem.startsWith('key-')) return decodeURIComponent(stem)
+  const hex = stem.slice(4)
+  const bytes = Uint8Array.from({ length: hex.length / 2 }, (_, i) => Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16))
+  return new TextDecoder().decode(bytes)
+}
 
 /** 指定したフォルダーへの写し（WeVocalSynth、WeVocal Studio で共通） */
 export function createDataFolder(o: DataFolderOptions) {
@@ -97,11 +105,18 @@ export function createDataFolder(o: DataFolderOptions) {
   const readWork = async (): Promise<[string, unknown][]> => {
     const dir = await autosaveDir(false)
     if (!dir) return []
-    const out: [string, unknown][] = []
+    const files: [string, FileSystemFileHandle][] = []
     for await (const [name, h] of (dir as unknown as Entries).entries()) {
       if (h.kind !== 'file') continue
-      const file = await (h as FileSystemFileHandle).getFile()
-      out.push([keyOf(name), name.endsWith('.clip') ? await decodeClip(file) : JSON.parse(await file.text())])
+      files.push([name, h as FileSystemFileHandle])
+    }
+    const out: [string, unknown][] = []
+    for (let i = 0; i < files.length; i += 4) {
+      const batch = await Promise.all(files.slice(i, i + 4).map(async ([name, handle]) => {
+        const file = await handle.getFile()
+        return [keyOf(name), name.endsWith('.clip') ? await decodeClip(file) : JSON.parse(await file.text())] as [string, unknown]
+      }))
+      out.push(...batch)
     }
     return out
   }
@@ -116,15 +131,18 @@ export function createDataFolder(o: DataFolderOptions) {
       if (!dir) return
       const clip = isClip(value) || isChannels(value)
       await writeFile(dir, fileOf(key, clip), clip ? encodeClip(value) : JSON.stringify(value))
-      // 種類が変わったときに、前の形のファイルを残さない
-      await dir.removeEntry(fileOf(key, !clip)).catch(() => {})
+      // 種類が変わったときも、旧形式の URI 符号化ファイルを移行したときも古い方を残さない
+      for (const old of [fileOf(key, !clip), legacyFileOf(key, clip), legacyFileOf(key, !clip)]) await dir.removeEntry(old).catch(() => {})
     },
 
     /** 写した `keys` を消す */
     async mirrorDelete(keys: string[]) {
       const dir = await autosaveDir(false)
       if (!dir) return
-      for (const key of keys) for (const clip of [true, false]) await dir.removeEntry(fileOf(key, clip)).catch(() => {})
+      for (const key of keys) for (const clip of [true, false]) {
+        await dir.removeEntry(fileOf(key, clip)).catch(() => {})
+        await dir.removeEntry(legacyFileOf(key, clip)).catch(() => {})
+      }
     },
 
     /** 写した作業をすべて消す（設定の「作業データを削除」） */
@@ -178,10 +196,11 @@ export function createDataFolder(o: DataFolderOptions) {
     },
 
     /** 写した設定と作業を戻す（`put` で IndexedDB に書く）。何か戻したら true（そのあと再読み込みする） */
-    async restore(put: (key: string, value: unknown) => Promise<unknown>) {
+    async restore(put: (key: string, value: unknown) => Promise<unknown>, putMany?: (entries: [string, unknown][]) => Promise<unknown>) {
       const settings = await api.restoreLocalSettings()
       const work = await readWork()
-      for (const [key, value] of work) await put(key, value)
+      if (putMany) await putMany(work)
+      else for (const [key, value] of work) await put(key, value)
       // 戻したあとは、このブラウザから写し続ける
       await api.linkFolder()
       return settings || work.length > 0
