@@ -115,7 +115,22 @@ export function createAddonFolder(idb: Idb, dirName: string, oldDirs: string[] =
     async read(id: string, path: string): Promise<File | null> {
       for (const top of await roots()) {
         const at = await locateIn(top, id, path, false)
-        const file = at && (await at[0].getFileHandle(at[1]).then((h) => h.getFile(), () => null))
+        let file: File | null = null
+        if (at) {
+          try {
+            file = await (await at[0].getFileHandle(at[1])).getFile()
+          } catch (e) {
+            if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+              console.error('Failed to read addon file from selected folder', {
+                directory: top.name,
+                id,
+                path,
+                fileName: at[1],
+                error: e,
+              })
+            }
+          }
+        }
         if (file) return file
       }
       return null
