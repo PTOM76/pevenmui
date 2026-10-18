@@ -94,7 +94,20 @@ export function createAddonFolder(idb: Idb, dirName: string, oldDirs: string[] =
     async write(id: string, path: string, data: ArrayBuffer | string) {
       const at = await locateIn(await root(true), id, path, true)
       if (!at) throw new Error('追加機能の保存先のフォルダーに書き込めません')
-      const w = await (await at[0].getFileHandle(at[1], { create: true })).createWritable()
+      let file: Awaited<ReturnType<DirHandle['getFileHandle']>>
+      try {
+        file = await at[0].getFileHandle(at[1], { create: true })
+      } catch (e) {
+        console.error('Failed to create addon file in selected folder', {
+          directory: at[0].name,
+          id,
+          path,
+          fileName: at[1],
+          error: e,
+        })
+        throw e
+      }
+      const w = await file.createWritable()
       await w.write(typeof data === 'string' ? new Blob([data]) : data)
       await w.close()
     },
