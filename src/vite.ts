@@ -86,7 +86,15 @@ export function pevenAddonsRoute(appId: string, folderName?: string) {
               for (const p of parts.slice(0, -1)) h = await h.getDirectoryHandle(p)
               file = await (await h.getFileHandle(parts[parts.length - 1])).getFile()
               break
-            } catch {
+            } catch (error) {
+              if (error?.name !== 'NotFoundError') {
+                console.error('Failed to read addon file from selected folder', {
+                  directory: name,
+                  path: rel,
+                  fileName: parts[parts.length - 1],
+                  error,
+                })
+              }
               // 次の置き場所を探す
             }
           }
@@ -95,7 +103,10 @@ export function pevenAddonsRoute(appId: string, folderName?: string) {
           const types = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' }
           return new Response(file, { headers: { 'content-type': types[ext] ?? 'application/octet-stream' } })
         }
-      } catch {
+      } catch (error) {
+        if (error?.message !== 'not found') {
+          console.error('Failed to read addon from selected folder', { url: url.href, error })
+        }
         // フォルダーになければネットワークから
       }
     }

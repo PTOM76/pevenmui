@@ -40,16 +40,38 @@ export function createAddonFolder(idb: Idb, dirName: string, oldDirs: string[] =
     return dir && (await dir.queryPermission({ mode: 'readwrite' })) === 'granted' ? dir : null
   }
   // 許可があるときの、追加機能を置くフォルダー（`create` なら作る）。使えなければ null
-  const root = async (create: boolean, name = dirName): Promise<DirHandle | null> => (await granted())?.getDirectoryHandle(name, { create }).catch(() => null) ?? null
+  const root = async (create: boolean, name = dirName): Promise<DirHandle | null> => {
+    const dir = await granted()
+    if (!dir) return null
+    try {
+      return await dir.getDirectoryHandle(name, { create })
+    } catch (e) {
+      if (create) throw e
+      if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+        console.error('Failed to access addon folder in selected folder', { directory: dir.name, name, error: e })
+      }
+      return null
+    }
+  }
   // 今の置き場所と、前の置き場所（あるものだけ）
   const roots = async () => (await Promise.all([dirName, ...oldDirs].map((n) => root(false, n)))).filter((d): d is DirHandle => !!d)
 
   // `path`（a/b.wasm）のファイルの、入っているフォルダーと名前
   const locateIn = async (top: DirHandle | null, id: string, path: string, create: boolean): Promise<[DirHandle, string] | null> => {
     const parts = path.split('/').filter(Boolean)
-    let dir = top ? await top.getDirectoryHandle(id, { create }).catch(() => null) : null
-    for (const p of parts.slice(0, -1)) dir = dir ? await dir.getDirectoryHandle(p, { create }).catch(() => null) : null
-    return dir ? [dir, parts[parts.length - 1]] : null
+    if (!top) return null
+    let dir = top
+    try {
+      dir = await dir.getDirectoryHandle(id, { create })
+      for (const p of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(p, { create })
+      return parts.length ? [dir, parts[parts.length - 1]] : null
+    } catch (e) {
+      if (create) throw e
+      if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+        console.error('Failed to locate addon file in selected folder', { directory: top.name, id, path, error: e })
+      }
+      return null
+    }
   }
 
   return {
@@ -92,24 +114,23 @@ export function createAddonFolder(idb: Idb, dirName: string, oldDirs: string[] =
     /** フォルダーを選んでいて、書き込みの許可がある（設定を保存する前でも、移す操作で使う） */
     writable: async () => !!(await root(true)),
     async write(id: string, path: string, data: ArrayBuffer | string) {
-      const at = await locateIn(await root(true), id, path, true)
-      if (!at) throw new Error('追加機能の保存先のフォルダーに書き込めません')
-      let file: Awaited<ReturnType<DirHandle['getFileHandle']>>
       try {
-        file = await at[0].getFileHandle(at[1], { create: true })
+        const top = await root(true)
+        const at = await locateIn(top, id, path, true)
+        if (!at) throw new Error('追加機能の保存先のフォルダーに書き込めません')
+        const file = await at[0].getFileHandle(at[1], { create: true })
+        const w = await file.createWritable()
+        await w.write(typeof data === 'string' ? new Blob([data]) : data)
+        await w.close()
       } catch (e) {
-        console.error('Failed to create addon file in selected folder', {
-          directory: at[0].name,
+        console.error('Failed to write addon file to selected folder', {
           id,
           path,
-          fileName: at[1],
+          fileName: path.split('/').filter(Boolean).at(-1),
           error: e,
         })
         throw e
       }
-      const w = await file.createWritable()
-      await w.write(typeof data === 'string' ? new Blob([data]) : data)
-      await w.close()
     },
     /** ファイルを読む（今の置き場所、前の置き場所の順に探す。なければ null） */
     async read(id: string, path: string): Promise<File | null> {
