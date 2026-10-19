@@ -103,10 +103,16 @@ export function createPackageStore(o: PackageStoreOptions) {
 
 /** 追加機能の保存先のフォルダー（addons.folder）を、id に prefix を付けて PackageFolder として使う（追加機能と同じフォルダーを共用する） */
 export function packageFolderOf(folder: PackageFolder, prefix: string): PackageFolder {
+  // Some selected-folder providers reject DLL extensions, so store the binary under a neutral name.
+  const folderPath = (path: string) => (path === 'plugin.dll' ? 'plugin.bin' : path)
   return {
     installsTo: () => folder.installsTo(),
-    write: (id, path, data) => folder.write(prefix + id, path, data),
-    read: (id, path) => folder.read(prefix + id, path),
+    write: (id, path, data) => folder.write(prefix + id, folderPath(path), data),
+    async read(id, path) {
+      const storedPath = folderPath(path)
+      const file = await folder.read(prefix + id, storedPath)
+      return file ?? (storedPath === path ? null : folder.read(prefix + id, path))
+    },
     remove: (id) => folder.remove(prefix + id),
     list: async () => (await folder.list()).filter((id) => id.startsWith(prefix)).map((id) => id.slice(prefix.length)),
   }
