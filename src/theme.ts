@@ -61,6 +61,8 @@ export const createPevenTheme = (desktop: boolean, overrides: PevenThemeOptions 
     MuiButtonBase: {
       styleOverrides: { root: ({ theme }) => ({ '&.Mui-focusVisible': { backgroundColor: theme.vars!.palette.action.focus } }) },
     },
+    // Font Awesome のアイコンは字形ごとに幅が違う（xmark は 1em より細い）ので、アイコンボタンが縦長や横長になり、ホバーの背景の円が楕円になる。幅を 1em にそろえて正円にする
+    MuiIconButton: { styleOverrides: { root: { '& .svg-inline--fa': { width: '1em' } } } },
     MuiCard: { defaultProps: { variant: 'outlined' } },
     MuiChip: { styleOverrides: { root: { borderRadius: 4 } } },
     // ページ自体はスクロールしないので、開いたときのスクロールロックは使わない。
