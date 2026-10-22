@@ -36,7 +36,7 @@ const isAccessKey = (group: MenuGroup, key: string) => !!group.accessKey && key.
  *   アプリとしてインストールして開いているときは、Alt+英字でも直接開く。英字の下線は、使えるときだけ付ける
  * MUI の Menu は画面全体を覆う透明な幕を出し、隣の項目へのマウス移動をふさぐため、幕のない Popper で作る
  */
-export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
+export default function MenuBar({ menus, embedded = false }: { menus: MenuGroup[]; /** ダイアログや窓の中に置くメニューバー。Alt と F10 でメニューバーに入る操作は、アプリ全体のメニューバーだけが受ける */ embedded?: boolean }) {
   const [open, setOpen] = useState<number | null>(null)
   // キーボードで移動中の項目（メニューを開いていないとき）
   const [focus, setFocus] = useState<number | null>(null)
@@ -51,6 +51,7 @@ export default function MenuBar({ menus }: { menus: MenuGroup[] }) {
 
   // Alt（単独で押して離したとき）/ F10 でメニューバーに入る。Windows と同じく、もう一度押すと抜ける
   useEffect(() => {
+    if (embedded) return
     let altAlone = false
     const down = (e: globalThis.KeyboardEvent) => {
       altAlone = e.key === 'Alt' && !e.repeat
