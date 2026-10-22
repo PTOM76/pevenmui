@@ -1,6 +1,10 @@
-import { createContext, useContext, type KeyboardEventHandler, type ReactNode } from 'react'
-import { Box, Dialog, DialogTitle, type DialogProps } from '@mui/material'
+import { createContext, useContext, useEffect, type KeyboardEventHandler, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { Box, Dialog, DialogTitle, IconButton, Tooltip, type DialogProps } from '@mui/material'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faWindowRestore } from '@fortawesome/free-solid-svg-icons'
 import { WindowPortal, type WindowMode } from './WindowPortal'
+import { useDock } from './dock'
 
 /** アプリ全体のダイアログの出し方。WindowDialog はここから読む（既定はページ内のダイアログ） */
 export const WindowModeContext = createContext<WindowMode>('dialog')
@@ -24,6 +28,8 @@ interface Props {
   focusSignal?: number
   /** 出し方。未指定なら WindowModeContext に従う */
   mode?: WindowMode
+  /** 画面の下の欄（DockArea）に置けるようにする。ページ内のダイアログの題名の横にボタンが出て、置いたかどうかは name ごとに覚える（DockProvider の中だけ） */
+  dockable?: boolean
   /** DialogContent・DialogActions */
   children: ReactNode
 }
@@ -35,9 +41,37 @@ interface Props {
 export function WindowDialog(p: Props) {
   const ctxMode = useContext(WindowModeContext)
   const mode = p.mode ?? ctxMode
+  const dock = useDock()
+  const docked = !!p.dockable && !!dock && dock.isDocked(p.name)
+  // 欄に置くときは、開いている間タブとして登録する
+  useEffect(() => {
+    if (!docked || !p.open || !dock) return
+    return dock.register({ name: p.name, title: p.title ?? p.name, onClose: () => p.onClose?.() })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docked, p.open, p.name, p.title])
+  if (docked) {
+    if (!p.open || !dock?.host || dock.active !== p.name) return null
+    return createPortal(
+      <Box onKeyDown={p.onKeyDown} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}>
+        {p.children}
+      </Box>,
+      dock.host,
+    )
+  }
   const dialog = (
     <Dialog open={p.open} onClose={p.onClose} onKeyDown={p.onKeyDown} {...p.dialogProps}>
-      {p.title && <DialogTitle sx={{ fontSize: 16, py: 1.5 }}>{p.title}</DialogTitle>}
+      {p.title && (
+        <DialogTitle sx={{ fontSize: 16, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {p.title}
+          {p.dockable && dock && (
+            <Tooltip title={dock.labels.dock}>
+              <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
+                <FontAwesomeIcon icon={faWindowRestore} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </DialogTitle>
+      )}
       {p.children}
     </Dialog>
   )
