@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, type KeyboardEventHandler, type R
 import { createPortal } from 'react-dom'
 import { Box, Dialog, DialogTitle, IconButton, Tooltip, type DialogProps } from '@mui/material'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faWindowRestore } from '@fortawesome/free-solid-svg-icons'
+import { faWindowRestore, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { WindowPortal, type WindowMode } from './WindowPortal'
 import { useDock } from './dock'
 
@@ -30,6 +30,8 @@ interface Props {
   mode?: WindowMode
   /** 画面の下の欄（DockArea）に置けるようにする。ページ内のダイアログの題名の横にボタンが出て、置いたかどうかは name ごとに覚える（DockProvider の中だけ） */
   dockable?: boolean
+  /** 題名の右に閉じるボタン（×）を出す。値はボタンの名前（ツールチップ）。下のボタンの行を置かない、狭い画面向けのダイアログで使う（ページ内のダイアログのみ） */
+  closeLabel?: string
   /** DialogContent・DialogActions */
   children: ReactNode
 }
@@ -61,15 +63,24 @@ export function WindowDialog(p: Props) {
   const dialog = (
     <Dialog open={p.open} onClose={p.onClose} onKeyDown={p.onKeyDown} {...p.dialogProps}>
       {p.title && (
-        <DialogTitle sx={{ fontSize: 16, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <DialogTitle sx={{ fontSize: 16, py: p.dialogProps?.fullScreen ? 0.75 : 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {p.title}
-          {p.dockable && dock && (
-            <Tooltip title={dock.labels.dock}>
-              <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
-                <FontAwesomeIcon icon={faWindowRestore} />
-              </IconButton>
-            </Tooltip>
-          )}
+          <Box sx={{ display: 'flex', gap: 0.25 }}>
+            {p.dockable && dock && (
+              <Tooltip title={dock.labels.dock}>
+                <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
+                  <FontAwesomeIcon icon={faWindowRestore} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {p.closeLabel && p.onClose && (
+              <Tooltip title={p.closeLabel}>
+                <IconButton size="small" aria-label={p.closeLabel} onClick={p.onClose}>
+                  <FontAwesomeIcon icon={faXmark} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
         </DialogTitle>
       )}
       {p.children}
