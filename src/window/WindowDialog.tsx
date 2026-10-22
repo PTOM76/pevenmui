@@ -93,6 +93,16 @@ export function WindowDialog(p: Props) {
         onKeyDown={p.onKeyDown}
         sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}
       >
+        {/* 別の窓には題名の行がないので、欄に置くボタンだけを細い行で出す */}
+        {p.dockable && dock && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 0.5, flexShrink: 0 }}>
+            <Tooltip title={dock.labels.dock}>
+              <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
+                <FontAwesomeIcon icon={faWindowRestore} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
         {p.children}
       </Box>
     </WindowPortal>
