@@ -55,7 +55,7 @@ export { AboutDialog } from './dialog/AboutDialog'
 export { LicensesDialog, type LicenseEntry } from './dialog/LicensesDialog'
 export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPortal'
 export { WindowDialog, WindowModeContext } from './window/WindowDialog'
-export { DockProvider, DockArea, useDock, type DockLabels } from './window/dock'
+export { DockProvider, DockArea, DockToolHost, useDock, type DockLabels } from './window/dock'
 
 // ---- ファイル、処理の進み具合、そのほか ----
 export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'

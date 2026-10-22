@@ -28,6 +28,8 @@ export interface DockApi {
   setDocked: (name: string, docked: boolean) => void
   /** 欄の中身を入れる要素（DockArea が出していなければ null） */
   host: HTMLElement | null
+  /** アプリのツールバーの中の、欄に置いた中身が自分のメニューやボタンを出す場所（DockToolHost が出していなければ null） */
+  toolHost: HTMLElement | null
   /** 今出ているタブの名前 */
   active: string | null
   /** 欄に置いて開いているダイアログを、タブとして登録する。戻り値で外す */
@@ -50,6 +52,7 @@ const loadDocked = (key: string): string[] => {
 export function DockProvider({ labels, storageKey = 'peven.docked', children }: { labels: DockLabels; storageKey?: string; children: ReactNode }) {
   const [docked, setDockedList] = useState(() => loadDocked(storageKey))
   const [host, setHost] = useState<HTMLElement | null>(null)
+  const [toolHost, setToolHost] = useState<HTMLElement | null>(null)
   const [tabs, setTabs] = useState<Tab[]>([])
   const [active, setActive] = useState<string | null>(null)
   const setDocked = useCallback(
@@ -77,16 +80,25 @@ export function DockProvider({ labels, storageKey = 'peven.docked', children }: 
   useEffect(() => {
     if (tabs.length && !tabs.some((t) => t.name === active)) setActive(tabs[tabs.length - 1].name)
   }, [tabs, active])
-  const api = useMemo<DockApi>(() => ({ labels, isDocked: (n) => docked.includes(n), setDocked, host, active, register }), [labels, docked, setDocked, host, active, register])
+  const api = useMemo<DockApi>(() => ({ labels, isDocked: (n) => docked.includes(n), setDocked, host, toolHost, active, register }), [labels, docked, setDocked, host, toolHost, active, register])
   return (
     <DockContext.Provider value={api}>
-      <DockTabs.Provider value={{ tabs, setActive, setHost }}>{children}</DockTabs.Provider>
+      <DockTabs.Provider value={{ tabs, setActive, setHost, setToolHost }}>{children}</DockTabs.Provider>
     </DockContext.Provider>
   )
 }
 
 /** DockArea だけが読む（タブの一覧と、欄の要素の受け取り） */
-const DockTabs = createContext<{ tabs: Tab[]; setActive: (name: string) => void; setHost: (el: HTMLElement | null) => void }>({ tabs: [], setActive: () => {}, setHost: () => {} })
+const DockTabs = createContext<{ tabs: Tab[]; setActive: (name: string) => void; setHost: (el: HTMLElement | null) => void; setToolHost: (el: HTMLElement | null) => void }>({ tabs: [], setActive: () => {}, setHost: () => {}, setToolHost: () => {} })
+
+/**
+ * アプリのツールバーに置く、欄の中身のための場所。欄に置いたダイアログは、ここへ portal で自分のメニューバーやボタンを出す
+ * （ダイアログや別の窓のときは、自分の中に出す）。欄に何もなければ空
+ */
+export function DockToolHost() {
+  const { setToolHost } = useContext(DockTabs)
+  return <Box ref={setToolHost} sx={{ display: 'flex', alignItems: 'center', minWidth: 0, overflowX: 'auto' }} />
+}
 
 /**
  * ドックの欄。置いたダイアログがなければ何も出さない。上の端をドラッグして高さを変える（高さは覚える）。
