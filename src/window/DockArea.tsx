@@ -10,6 +10,7 @@ import { faClone, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { usePalette } from '../hooks/usePalette'
 import { usePersistentNumber } from '../layout/Splitter'
 import { DOCK_EDGES, useDock, type DockEdge } from './dock'
+import { loadLayout, pruneLayout, saveLayout, type SavedLayout } from './dockLayout'
 
 /** パネルの中身を入れる要素を、ドックの状態に知らせる（中身は WindowDialog が portal で入れる） */
 function HostPanel(props: IDockviewPanelProps) {
@@ -100,6 +101,26 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
   // 利用者が大きさを変えていなければ（覚えた値が 0）、置いたダイアログの標準の大きさ、なければ initialSize
   const [stored, setSize] = usePersistentNumber(sizeKey ?? (edge === 'bottom' ? 'peven.dockHeight' : `peven.dock.${edge}`), 0)
   const drag = useRef<{ p: number; s: number } | null>(null)
+  const restored = useRef<DockviewApi | null>(null)
+  // 配置が変わったら（少し待って）覚える。パネルがすべてなくなったときは、前の配置を残す
+  useEffect(() => {
+    if (!api) return
+    let timer = 0
+    const sub = api.onDidLayoutChange(() => {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        try {
+          if (api.panels.length) saveLayout(edge, api.toJSON() as unknown as SavedLayout)
+        } catch {
+          // 捨てられた dockview には触れない
+        }
+      }, 300)
+    })
+    return () => {
+      window.clearTimeout(timer)
+      sub.dispose()
+    }
+  }, [api, edge])
   const mine = dock ? dock.tabs.filter((t) => t.edge === edge) : []
   const hint = Math.max(0, ...mine.map((t) => t.size ?? 0))
   const size = stored || hint || initialSize
@@ -109,6 +130,19 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
     // 置いたものがなくなると欄ごと外れて dockview も捨てられるので、その api には触らない（次に置いたときに作り直す）
     if (!mine.length) return setApi(null)
     if (!api) return
+    // この dockview を作って最初のときは、覚えた配置（分割、タブの組、大きさ）を、今開いているパネルだけ残して戻す
+    if (restored.current !== api) {
+      restored.current = api
+      const saved = loadLayout(edge)
+      const pruned = saved && pruneLayout(saved, new Set(mine.map((t) => t.name)))
+      if (pruned) {
+        try {
+          api.fromJSON(pruned as never)
+        } catch {
+          api.clear()
+        }
+      }
+    }
     const want = new Map(mine.map((t) => [t.name, t]))
     for (const panel of [...api.panels]) if (!want.has(panel.id)) api.removePanel(panel)
     for (const [name, t] of want) {
