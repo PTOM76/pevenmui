@@ -50,12 +50,19 @@ interface Props {
  */
 export function WindowDialog(p: Props) {
   const ctxMode = useContext(WindowModeContext)
-  const mode = p.mode ?? ctxMode
   const dock = useDock()
+  // 欄のタブを本体の窓の外へ出したときは、その位置に別の窓（ポップアップ）で開く（閉じるまで）
+  const tearAt = dock?.tearOf(p.name) ?? null
+  const mode = tearAt ? 'popup' : (p.mode ?? ctxMode)
   // 置く端: 覚えた置き場所、なければ標準の置き場所。ダイアログにすると選んでいれば、欄には置かない
   const pref = dock?.edgeOf(p.name)
   const edge: DockEdge | null = p.dockable && dock ? (pref === 'dialog' ? null : (pref ?? p.defaultDock ?? null)) : null
   const docked = edge !== null
+  // 窓にして開いたものは、閉じたら普通の出し方に戻す
+  const clearTear = dock?.clearTear
+  useEffect(() => {
+    if (!p.open && tearAt) clearTear?.(p.name)
+  }, [p.open, tearAt, clearTear, p.name])
   // 別の窓に出しているあいだ、窓の位置を見張る。本体の窓の端に寄せて離したら、その端の欄に置く
   const [popup, setPopup] = useState<Window | null>(null)
   const trackWindow = dock?.trackWindow
@@ -107,7 +114,7 @@ export function WindowDialog(p: Props) {
   )
   if (mode === 'dialog') return dialog
   return (
-    <WindowPortal open={p.open} mode={mode} name={p.name} onWindow={mode === 'popup' || mode === 'window' ? setPopup : undefined} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
+    <WindowPortal open={p.open} mode={mode} name={p.name} at={tearAt ?? undefined} onWindow={mode === 'popup' || mode === 'window' ? setPopup : undefined} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
       <Box
         onKeyDown={p.onKeyDown}
         sx={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}

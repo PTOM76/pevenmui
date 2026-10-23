@@ -2,7 +2,7 @@
 // どの端（下、左、右、上）に置くかは、ダイアログの名前（name）ごとに覚える。同じ端に複数置けば、欄の中で並べたり、タブで切り替えたりできる（DockArea）。
 // アプリは DockProvider で包み、画面の端に DockArea を置く
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Box } from '@mui/material'
+import { Box, alpha } from '@mui/material'
 import { watchWindowSnap } from './dockSnap'
 
 /** 欄を置ける端 */
@@ -49,6 +49,11 @@ export interface DockApi {
   setVisible: (name: string, visible: boolean) => void
   /** アプリのツールバーの中の、欄に置いた中身が自分のメニューやボタンを出す場所（DockToolHost が出していなければ null） */
   toolHost: HTMLElement | null
+  /** タブを本体の窓の外へ出して窓にしたときの、窓を開く位置（画面の座標）。窓を閉じたら消える */
+  tearOf: (name: string) => { x: number; y: number } | null
+  /** 欄から外して、別の窓（ポップアップ）として screenX、screenY の位置に出す */
+  tearOff: (name: string, at: { x: number; y: number }) => void
+  clearTear: (name: string) => void
   /** 欄に置いて開いているダイアログ（タブ）。登録の順 */
   tabs: DockTab[]
   /** 欄に置いて開いているダイアログを、タブとして登録する。戻り値で外す */
@@ -106,6 +111,23 @@ export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap =
     [],
   )
   const setVisible = useCallback((name: string, on: boolean) => setVisibleMap((map) => (map[name] === on ? map : { ...map, [name]: on })), [])
+  const [tear, setTear] = useState<Record<string, { x: number; y: number }>>({})
+  const tearOff = useCallback(
+    (name: string, at: { x: number; y: number }) => {
+      setDocked(name, false)
+      setTear((m) => ({ ...m, [name]: at }))
+    },
+    [setDocked],
+  )
+  const clearTear = useCallback(
+    (name: string) =>
+      setTear((m) => {
+        if (!(name in m)) return m
+        const { [name]: _, ...rest } = m
+        return rest
+      }),
+    [],
+  )
   const [guide, setGuide] = useState<DockEdge | null>(null)
   const trackWindow = useCallback(
     (name: string, win: Window) => (windowSnap ? watchWindowSnap(win, { onGuide: setGuide, onDrop: (edge) => setDocked(name, true, edge) }) : () => {}),
@@ -116,14 +138,14 @@ export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap =
     return () => setTabs((list) => list.filter((t) => t.name !== tab.name))
   }, [])
   const api = useMemo<DockApi>(
-    () => ({ labels, isDocked: (n) => !!docked[n] && docked[n] !== 'dialog', edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register, trackWindow }),
-    [labels, docked, setDocked, hosts, setHost, visible, setVisible, toolHost, tabs, register, trackWindow],
+    () => ({ labels, isDocked: (n) => !!docked[n] && docked[n] !== 'dialog', edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register, trackWindow, tearOf: (n) => tear[n] ?? null, tearOff, clearTear }),
+    [labels, docked, setDocked, hosts, setHost, visible, setVisible, toolHost, tabs, register, trackWindow, tear, tearOff, clearTear],
   )
   return (
     <DockContext.Provider value={api}>
       <ToolHostSetter.Provider value={setToolHost}>{children}</ToolHostSetter.Provider>
       <SnapGuide edge={guide} label={guide ? labels.edges?.[guide] : undefined} />
-      <EdgeDrag onDrop={(name, edge) => setDocked(name, true, edge)} onGuide={setGuide} />
+      <EdgeDrag onDrop={(name, edge) => setDocked(name, true, edge)} onTearOff={tearOff} onGuide={setGuide} />
     </DockContext.Provider>
   )
 }
@@ -147,7 +169,7 @@ function SnapGuide({ edge, label }: { edge: DockEdge | null; label?: string }) {
   return (
     <Box
       aria-hidden
-      sx={{ position: 'fixed', zIndex: 1600, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'primary.contrastText', bgcolor: 'primary.main', opacity: 0.35, border: 2, borderColor: 'primary.main', [edge]: 0, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: vertical ? '30%' : '35%' }}
+      sx={{ position: 'fixed', zIndex: 1600, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 500, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,.8)', bgcolor: (t) => alpha(t.palette.primary.main, 0.3), border: 2, borderColor: 'primary.main', [edge]: 0, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: vertical ? '30%' : '35%' }}
     >
       {label}
     </Box>
@@ -162,13 +184,17 @@ const NEAR = 72
  * 欄の中でのタブの並べ替えや分割は dockview が受けるので、今の端には何もしない（欄の中の落とし先を邪魔しない）。
  * 受けるのは画面全体の dragover と drop で行い、印は見せるだけ（印の上で受けるようにすると、落とした瞬間に印が消えて受けられない）
  */
-function EdgeDrag({ onDrop, onGuide }: { onDrop: (name: string, edge: DockEdge) => void; onGuide: (edge: DockEdge | null) => void }) {
+function EdgeDrag({ onDrop, onTearOff, onGuide }: { onDrop: (name: string, edge: DockEdge) => void; onTearOff: (name: string, at: { x: number; y: number }) => void; onGuide: (edge: DockEdge | null) => void }) {
   const drop = useRef(onDrop)
   drop.current = onDrop
+  const tear = useRef(onTearOff)
+  tear.current = onTearOff
   const guide = useRef(onGuide)
   guide.current = onGuide
   useEffect(() => {
     let drag: { name: string; edge: string | null } | null = null
+    // 最後に分かったポインターの画面の座標（ドラッグの最後の drag イベントは 0 を返すので、それは使わない）
+    let last: { x: number; y: number } | null = null
     /** ポインターが寄っている端（今の端は除く）。どれにも寄っていなければ null */
     const near = (e: DragEvent): DockEdge | null => {
       if (!drag) return null
@@ -188,9 +214,24 @@ function EdgeDrag({ onDrop, onGuide }: { onDrop: (name: string, edge: DockEdge) 
       // 落とせる所だと知らせる（これがないと、離したときに drop が来ない）
       if (edge) e.preventDefault()
     }
+    const track = (e: DragEvent) => {
+      if (drag && (e.screenX !== 0 || e.screenY !== 0)) last = { x: e.screenX, y: e.screenY }
+    }
     const end = () => {
       drag = null
+      last = null
       guide.current(null)
+    }
+    // どこにも落とせずに終わり、ポインターが本体の窓の外にあったら、そこに窓として出す
+    const ended = (e: DragEvent) => {
+      const name = drag?.name
+      const at = last
+      end()
+      if (!name || !at || e.dataTransfer?.dropEffect !== 'none') return
+      const margin = 8
+      const outside = at.x < window.screenX - margin || at.x > window.screenX + window.outerWidth + margin || at.y < window.screenY - margin || at.y > window.screenY + window.outerHeight + margin
+      // つかんだ所が窓の左上になるよう、少しずらす
+      if (outside) tear.current(name, { x: Math.round(at.x - 40), y: Math.round(at.y - 16) })
     }
     const dropped = (e: DragEvent) => {
       const edge = near(e)
@@ -205,12 +246,14 @@ function EdgeDrag({ onDrop, onGuide }: { onDrop: (name: string, edge: DockEdge) 
     document.addEventListener('dragstart', start, true)
     document.addEventListener('dragover', over, true)
     document.addEventListener('drop', dropped, true)
-    document.addEventListener('dragend', end, true)
+    document.addEventListener('dragend', ended, true)
+    document.addEventListener('drag', track, true)
     return () => {
       document.removeEventListener('dragstart', start, true)
       document.removeEventListener('dragover', over, true)
       document.removeEventListener('drop', dropped, true)
-      document.removeEventListener('dragend', end, true)
+      document.removeEventListener('dragend', ended, true)
+      document.removeEventListener('drag', track, true)
     }
   }, [])
   return null

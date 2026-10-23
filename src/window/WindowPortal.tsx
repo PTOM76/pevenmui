@@ -36,6 +36,8 @@ interface Props {
   width: number
   height: number
   onClose: () => void
+  /** 別の窓（popup）を開く位置（画面の座標。窓の左上）。省くと、前に置いた位置か、開いている画面の中央 */
+  at?: { x: number; y: number }
   /** 変わるたびに、開いている別の窓を手前に出す（開いたまま、もう一度開こうとしたときに増やす） */
   focusSignal?: number
   /** 別の窓を開いたあと、高さを中身に合わせる（中身の高さが決まっているダイアログ用。設定画面のように窓いっぱいに広がるものには使わない） */
@@ -163,7 +165,7 @@ function savePlacement(name: string, p: Placement) {
 }
 
 /** 窓を開く。開けなければ null */
-async function openWindow(mode: ExternalMode, name: string, width: number, height: number): Promise<Window | null> {
+async function openWindow(mode: ExternalMode, name: string, width: number, height: number, at?: { x: number; y: number }): Promise<Window | null> {
   // 窓の大きさの指定が無いと、ブラウザは別タブで開く
   if (mode === 'tab') return window.open('', name)
   const saved = loadPlacement(name)
@@ -199,6 +201,10 @@ async function openWindow(mode: ExternalMode, name: string, width: number, heigh
     } catch {
       return null
     }
+  }
+  if (at) {
+    x = at.x
+    y = at.y
   }
   return window.open('', name, `popup,width=${Math.round(w)},height=${Math.round(h)},left=${Math.round(x)},top=${Math.round(y)}`)
 }
@@ -237,6 +243,8 @@ export function WindowPortal(p: Props) {
   titleRef.current = p.title
   const onWindowRef = useRef(p.onWindow)
   onWindowRef.current = p.onWindow
+  const atRef = useRef(p.at)
+  atRef.current = p.at
 
   useEffect(() => {
     if (!p.open) return
@@ -276,7 +284,7 @@ export function WindowPortal(p: Props) {
     // 元のページを閉じたら一緒に閉じる（PiP はブラウザが閉じる）
     const closeChild = () => win?.close()
 
-    openWindow(mode, p.name, p.width, p.height).then((w) => {
+    openWindow(mode, p.name, p.width, p.height, atRef.current).then((w) => {
       if (disposed) {
         w?.close()
         return
