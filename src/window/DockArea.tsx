@@ -41,6 +41,7 @@ function DockTab(props: IDockviewPanelHeaderProps) {
   return (
     <Box
       data-dock-name={name}
+      data-dock-edge={edge}
       onContextMenu={(e) => {
         if (!dock.labels.edges) return
         e.preventDefault()

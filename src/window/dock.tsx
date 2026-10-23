@@ -1,7 +1,7 @@
 // ドックの状態。WindowDialog の dockable なダイアログを、ダイアログの代わりに画面の端の欄（DockArea）に置ける。
 // どの端（下、左、右、上）に置くかは、ダイアログの名前（name）ごとに覚える。同じ端に複数置けば、欄の中で並べたり、タブで切り替えたりできる（DockArea）。
 // アプリは DockProvider で包み、画面の端に DockArea を置く
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Box } from '@mui/material'
 import { watchWindowSnap } from './dockSnap'
 
@@ -120,8 +120,8 @@ export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap =
   return (
     <DockContext.Provider value={api}>
       <ToolHostSetter.Provider value={setToolHost}>{children}</ToolHostSetter.Provider>
-      <SnapGuide edge={guide} />
-      <EdgeDropZones edgeLabels={labels.edges} onDrop={(name, edge) => setDocked(name, true, edge)} />
+      <SnapGuide edge={guide} label={guide ? labels.edges?.[guide] : undefined} />
+      <EdgeDrag onDrop={(name, edge) => setDocked(name, true, edge)} onGuide={setGuide} />
     </DockContext.Provider>
   )
 }
@@ -138,76 +138,78 @@ export function DockToolHost() {
   return <Box ref={setToolHost} sx={{ display: 'flex', alignItems: 'center', minWidth: 0, overflowX: 'auto' }} />
 }
 
-/** 別の窓を端に寄せているあいだ、置ける端に出す印（本体の窓の端の帯。操作は受けない） */
-function SnapGuide({ edge }: { edge: DockEdge | null }) {
+/** 置ける端に出す印（別の窓や、欄のタブを端に寄せているあいだ。画面の端の帯で、操作は受けない） */
+function SnapGuide({ edge, label }: { edge: DockEdge | null; label?: string }) {
   if (!edge) return null
   const vertical = edge === 'left' || edge === 'right'
   return (
     <Box
       aria-hidden
-      sx={{ position: 'fixed', zIndex: 1600, pointerEvents: 'none', bgcolor: 'primary.main', opacity: 0.25, border: 2, borderColor: 'primary.main', [edge]: 0, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: vertical ? '30%' : '35%' }}
-    />
+      sx={{ position: 'fixed', zIndex: 1600, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'primary.contrastText', bgcolor: 'primary.main', opacity: 0.35, border: 2, borderColor: 'primary.main', [edge]: 0, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: vertical ? '30%' : '35%' }}
+    >
+      {label}
+    </Box>
   )
 }
 
-/** 画面の端の帯の幅（px） */
-const ZONE = 56
+/** 画面の端から、この距離（px）まで寄せると、その端に置く */
+const NEAR = 72
 
 /**
- * 欄のタブをドラッグしているあいだ、画面の 4 つの端に出す落とす先。落とすと、その端の欄に置く。
- * タブは dockview の中でも分割して並べられる（欄の中は dockview が受ける）が、欄をまたいだ移動は、ここで受ける
+ * 欄のタブをドラッグしているあいだ、画面の端に近づいたら、置ける端に印を出す。そこで離すと、その端の欄に移る。
+ * 欄の中でのタブの並べ替えや分割は dockview が受けるので、今の端には何もしない（欄の中の落とし先を邪魔しない）。
+ * 受けるのは画面全体の dragover と drop で行い、印は見せるだけ（印の上で受けるようにすると、落とした瞬間に印が消えて受けられない）
  */
-function EdgeDropZones({ edgeLabels, onDrop }: { edgeLabels?: Record<DockEdge, string>; onDrop: (name: string, edge: DockEdge) => void }) {
-  const [name, setName] = useState<string | null>(null)
-  const [over, setOver] = useState<DockEdge | null>(null)
+function EdgeDrag({ onDrop, onGuide }: { onDrop: (name: string, edge: DockEdge) => void; onGuide: (edge: DockEdge | null) => void }) {
+  const drop = useRef(onDrop)
+  drop.current = onDrop
+  const guide = useRef(onGuide)
+  guide.current = onGuide
   useEffect(() => {
+    let drag: { name: string; edge: string | null } | null = null
+    /** ポインターが寄っている端（今の端は除く）。どれにも寄っていなければ null */
+    const near = (e: DragEvent): DockEdge | null => {
+      if (!drag) return null
+      const d: Record<DockEdge, number> = { left: e.clientX, right: window.innerWidth - e.clientX, top: e.clientY, bottom: window.innerHeight - e.clientY }
+      const [edge, dist] = (Object.entries(d) as [DockEdge, number][]).reduce((x, y) => (y[1] < x[1] ? y : x))
+      return dist < NEAR && edge !== drag.edge ? edge : null
+    }
     const start = (e: DragEvent) => {
       const tab = (e.target as Element | null)?.closest?.('.dv-tab')
-      const n = tab?.querySelector('[data-dock-name]')?.getAttribute('data-dock-name')
-      if (n) setName(n)
+      const mark = tab?.querySelector('[data-dock-name]')
+      const name = mark?.getAttribute('data-dock-name')
+      drag = name ? { name, edge: mark?.getAttribute('data-dock-edge') ?? null } : null
+    }
+    const over = (e: DragEvent) => {
+      const edge = near(e)
+      guide.current(edge)
+      // 落とせる所だと知らせる（これがないと、離したときに drop が来ない）
+      if (edge) e.preventDefault()
     }
     const end = () => {
-      setName(null)
-      setOver(null)
+      drag = null
+      guide.current(null)
+    }
+    const dropped = (e: DragEvent) => {
+      const edge = near(e)
+      const name = drag?.name
+      end()
+      if (!edge || !name) return
+      // 欄の中の落とし先（dockview）には渡さない
+      e.preventDefault()
+      e.stopPropagation()
+      drop.current(name, edge)
     }
     document.addEventListener('dragstart', start, true)
+    document.addEventListener('dragover', over, true)
+    document.addEventListener('drop', dropped, true)
     document.addEventListener('dragend', end, true)
-    document.addEventListener('drop', end, true)
     return () => {
       document.removeEventListener('dragstart', start, true)
+      document.removeEventListener('dragover', over, true)
+      document.removeEventListener('drop', dropped, true)
       document.removeEventListener('dragend', end, true)
-      document.removeEventListener('drop', end, true)
     }
   }, [])
-  if (!name) return null
-  const place: Record<DockEdge, object> = {
-    left: { left: 0, top: 0, bottom: 0, width: ZONE },
-    right: { right: 0, top: 0, bottom: 0, width: ZONE },
-    top: { top: 0, left: ZONE, right: ZONE, height: ZONE },
-    bottom: { bottom: 0, left: ZONE, right: ZONE, height: ZONE },
-  }
-  return (
-    <>
-      {DOCK_EDGES.map((edge) => (
-        <Box
-          key={edge}
-          data-dock-zone={edge}
-          onDragOver={(e) => {
-            e.preventDefault()
-            setOver(edge)
-          }}
-          onDragLeave={() => setOver((o) => (o === edge ? null : o))}
-          onDrop={(e) => {
-            e.preventDefault()
-            onDrop(name, edge)
-            setName(null)
-            setOver(null)
-          }}
-          sx={{ position: 'fixed', zIndex: 1700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'primary.contrastText', border: 2, borderColor: 'primary.main', bgcolor: over === edge ? 'primary.main' : 'transparent', backgroundImage: over === edge ? 'none' : 'linear-gradient(rgba(127,127,127,.18), rgba(127,127,127,.18))', opacity: over === edge ? 0.7 : 0.9, ...place[edge] }}
-        >
-          {over === edge ? edgeLabels?.[edge] : null}
-        </Box>
-      ))}
-    </>
-  )
+  return null
 }
