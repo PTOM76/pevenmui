@@ -27,6 +27,8 @@ export interface DockTab {
   edge: DockEdge
   /** 欄の標準の大きさ（欄が下か上なら高さ、左か右なら幅。px。利用者が変えていなければ使う） */
   size?: number
+  /** 左や右の欄に縦に積むときの、このパネルの高さ（px）。省くと等分 */
+  length?: number
   onClose: () => void
 }
 

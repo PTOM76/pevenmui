@@ -114,7 +114,7 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
     for (const [name, t] of want) {
       const panel = api.getPanel(name)
       // 左と右の欄では、あとから置いたものを下に積む（インスペクタのように縦に並べる）。上と下の欄では、同じ組のタブにする
-      if (!panel) api.addPanel({ id: name, component: 'host', title: t.title, renderer: 'always', ...(vertical && api.panels.length ? { position: { referencePanel: api.panels[api.panels.length - 1].id, direction: 'below' as const } } : {}) })
+      if (!panel) api.addPanel({ id: name, component: 'host', title: t.title, renderer: 'always', ...(vertical && api.panels.length ? { position: { referencePanel: api.panels[api.panels.length - 1].id, direction: 'below' as const }, ...(t.length ? { initialHeight: t.length } : {}) } : {}) })
       else if (panel.title !== t.title) panel.api.setTitle(t.title)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

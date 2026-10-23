@@ -32,6 +32,8 @@ interface Props {
   defaultDock?: DockEdge
   /** 標準の置き場所（defaultDock）の欄の標準の大きさ（px。欄が下か上なら高さ、左か右なら幅）。利用者が欄の大きさを変えていなければ使う */
   dockSize?: number
+  /** 左や右の欄に縦に積むときの、このパネルの高さ（px）。省くと等分 */
+  dockLength?: number
   /** 画面の端の欄（DockArea）に置けるようにする。ページ内のダイアログの題名の横にボタンが出て、置いたかどうかは name ごとに覚える（DockProvider の中だけ） */
   dockable?: boolean
   /** 別の窓で、欄に置くボタンを右端からずらす幅（px）。右端に、中身が自分のボタンを置くとき */
@@ -64,9 +66,9 @@ export function WindowDialog(p: Props) {
   // 欄に置くときは、開いている間タブとして登録する
   useEffect(() => {
     if (!docked || !p.open || !dock) return
-    return dock.register({ name: p.name, title: p.title ?? p.name, edge: edge!, size: edge === p.defaultDock ? p.dockSize : undefined, onClose: () => p.onClose?.() })
+    return dock.register({ name: p.name, title: p.title ?? p.name, edge: edge!, size: edge === p.defaultDock ? p.dockSize : undefined, length: p.dockLength, onClose: () => p.onClose?.() })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docked, edge, p.open, p.name, p.title, p.dockSize])
+  }, [docked, edge, p.open, p.name, p.title, p.dockSize, p.dockLength])
   if (docked) {
     const host = dock?.hostOf(p.name)
     if (!p.open || !host || !dock?.isVisible(p.name)) return null
