@@ -11,6 +11,11 @@ interface Props {
   statusBar: ReactNode
   /** インスペクタの幅を覚える localStorage のキー */
   storageKey: string
+  /** 画面の端の欄（ドック。DockArea）。編集領域の上、左、下と、インスペクタの右に置く。省くと何も出さない */
+  dockTop?: ReactNode
+  dockLeft?: ReactNode
+  dockBottom?: ReactNode
+  dockRight?: ReactNode
   /** インスペクタの幅の既定値と、分割バーで変えられる範囲（px） */
   width?: number
   minWidth?: number
@@ -26,14 +31,20 @@ export function DesktopLayout({ width = 320, minWidth = 240, maxWidth = 560, ...
   return (
     <>
       {p.toolbar}
+      {p.dockTop}
       <Stack direction="row" sx={{ flex: 1, minHeight: 0 }}>
-        {/* 編集領域は端まで使う（上に余白を作らない） */}
-        <Box sx={{ flex: 1, minWidth: 0, bgcolor: 'background.paper' }}>{p.editor}</Box>
+        {p.dockLeft}
+        {/* 編集領域は端まで使う（上に余白を作らない）。下の欄があれば、その上に収める */}
+        <Box sx={{ flex: 1, minWidth: 0, bgcolor: 'background.paper', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ flex: 1, minHeight: 0 }}>{p.editor}</Box>
+          {p.dockBottom}
+        </Box>
         {inspector.bar}
         {/* 左の編集領域と同じ背景にし、カードで囲まずに分割バーだけで分ける */}
         <Box sx={{ width: inspector.width, flexShrink: 0, overflowY: 'auto', bgcolor: 'background.paper' }}>
           {p.inspector}
         </Box>
+        {p.dockRight}
       </Stack>
       {p.statusBar}
     </>
