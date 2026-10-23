@@ -6,7 +6,7 @@ interface Props {
   toolbar: ReactNode
   /** 編集領域（ファイルを開く前は案内）。画面の残りの高さをすべて使う */
   editor: ReactNode
-  /** 右側のインスペクタに縦に並べるパネル */
+  /** 右側のインスペクタに縦に並べるパネル。null なら列ごと出さない（パネルを欄に置くとき） */
   inspector: ReactNode
   statusBar: ReactNode
   /** インスペクタの幅を覚える localStorage のキー */
@@ -39,11 +39,16 @@ export function DesktopLayout({ width = 320, minWidth = 240, maxWidth = 560, ...
           <Box sx={{ flex: 1, minHeight: 0 }}>{p.editor}</Box>
           {p.dockBottom}
         </Box>
-        {inspector.bar}
-        {/* 左の編集領域と同じ背景にし、カードで囲まずに分割バーだけで分ける */}
-        <Box sx={{ width: inspector.width, flexShrink: 0, overflowY: 'auto', bgcolor: 'background.paper' }}>
-          {p.inspector}
-        </Box>
+        {/* インスペクタがなければ（欄に置いたときなど）、列ごと出さない */}
+        {p.inspector != null && (
+          <>
+            {inspector.bar}
+            {/* 左の編集領域と同じ背景にし、カードで囲まずに分割バーだけで分ける */}
+            <Box sx={{ width: inspector.width, flexShrink: 0, overflowY: 'auto', bgcolor: 'background.paper' }}>
+              {p.inspector}
+            </Box>
+          </>
+        )}
         {p.dockRight}
       </Stack>
       {p.statusBar}

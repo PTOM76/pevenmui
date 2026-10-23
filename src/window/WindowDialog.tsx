@@ -30,7 +30,7 @@ interface Props {
   mode?: WindowMode
   /** 覚えた置き場所がないとき、標準で置く端（ダイアログにすると選ぶまで、欄に置く）。dockable のときだけ */
   defaultDock?: DockEdge
-  /** 欄の標準の大きさ（px。欄が下か上なら高さ、左か右なら幅）。利用者が欄の大きさを変えていなければ使う */
+  /** 標準の置き場所（defaultDock）の欄の標準の大きさ（px。欄が下か上なら高さ、左か右なら幅）。利用者が欄の大きさを変えていなければ使う */
   dockSize?: number
   /** 画面の端の欄（DockArea）に置けるようにする。ページ内のダイアログの題名の横にボタンが出て、置いたかどうかは name ごとに覚える（DockProvider の中だけ） */
   dockable?: boolean
@@ -64,14 +64,14 @@ export function WindowDialog(p: Props) {
   // 欄に置くときは、開いている間タブとして登録する
   useEffect(() => {
     if (!docked || !p.open || !dock) return
-    return dock.register({ name: p.name, title: p.title ?? p.name, edge: edge!, size: p.dockSize, onClose: () => p.onClose?.() })
+    return dock.register({ name: p.name, title: p.title ?? p.name, edge: edge!, size: edge === p.defaultDock ? p.dockSize : undefined, onClose: () => p.onClose?.() })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docked, edge, p.open, p.name, p.title, p.dockSize])
   if (docked) {
     const host = dock?.hostOf(p.name)
     if (!p.open || !host || !dock?.isVisible(p.name)) return null
     return createPortal(
-      <Box onKeyDown={p.onKeyDown} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}>
+      <Box onKeyDown={p.onKeyDown} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}>
         {p.children}
       </Box>,
       host,

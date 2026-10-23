@@ -100,8 +100,7 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
   const [stored, setSize] = usePersistentNumber(sizeKey ?? (edge === 'bottom' ? 'peven.dockHeight' : `peven.dock.${edge}`), 0)
   const drag = useRef<{ p: number; s: number } | null>(null)
   const mine = dock ? dock.tabs.filter((t) => t.edge === edge) : []
-  // ダイアログの標準の大きさは高さなので、下と上の欄だけに使う
-  const hint = edge === 'bottom' || edge === 'top' ? Math.max(0, ...mine.map((t) => t.size ?? 0)) : 0
+  const hint = Math.max(0, ...mine.map((t) => t.size ?? 0))
   const size = stored || hint || initialSize
   const key = mine.map((t) => `${t.name}\n${t.title}`).join('\n\n')
   // 欄に置いたダイアログと、dockview のパネルをそろえる
@@ -113,7 +112,8 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
     for (const panel of [...api.panels]) if (!want.has(panel.id)) api.removePanel(panel)
     for (const [name, t] of want) {
       const panel = api.getPanel(name)
-      if (!panel) api.addPanel({ id: name, component: 'host', title: t.title, renderer: 'always' })
+      // 左と右の欄では、あとから置いたものを下に積む（インスペクタのように縦に並べる）。上と下の欄では、同じ組のタブにする
+      if (!panel) api.addPanel({ id: name, component: 'host', title: t.title, renderer: 'always', ...(vertical && api.panels.length ? { position: { referencePanel: api.panels[api.panels.length - 1].id, direction: 'below' as const } } : {}) })
       else if (panel.title !== t.title) panel.api.setTitle(t.title)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
