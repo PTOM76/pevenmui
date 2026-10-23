@@ -30,6 +30,8 @@ interface Props {
   mode?: WindowMode
   /** 画面の下の欄（DockArea）に置けるようにする。ページ内のダイアログの題名の横にボタンが出て、置いたかどうかは name ごとに覚える（DockProvider の中だけ） */
   dockable?: boolean
+  /** 別の窓で、欄に置くボタンを右端からずらす幅（px）。右端に、中身が自分のボタンを置くとき */
+  dockInset?: number
   /** 題名の右に閉じるボタン（×）を出す。値はボタンの名前（ツールチップ）。下のボタンの行を置かない、狭い画面向けのダイアログで使う（ページ内のダイアログのみ） */
   closeLabel?: string
   /** DialogContent・DialogActions */
@@ -95,7 +97,7 @@ export function WindowDialog(p: Props) {
       >
         {/* 別の窓には題名の行がないので、欄に置くボタンは、中身の最初の行（メニューバーなど）の右端に重ねる（行を増やさない） */}
         {p.dockable && dock && (
-          <Box sx={{ position: 'absolute', top: 2, right: 4, zIndex: 2 }}>
+          <Box sx={{ position: 'absolute', top: 2, right: 4 + (p.dockInset ?? 0), zIndex: 2 }}>
             <Tooltip title={dock.labels.dock}>
               <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
                 <FontAwesomeIcon icon={faWindowRestore} />
