@@ -91,11 +91,11 @@ export function WindowDialog(p: Props) {
     <WindowPortal open={p.open} mode={mode} name={p.name} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
       <Box
         onKeyDown={p.onKeyDown}
-        sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}
+        sx={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}
       >
-        {/* 別の窓には題名の行がないので、欄に置くボタンだけを細い行で出す */}
+        {/* 別の窓には題名の行がないので、欄に置くボタンは、中身の最初の行（メニューバーなど）の右端に重ねる（行を増やさない） */}
         {p.dockable && dock && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 0.5, flexShrink: 0 }}>
+          <Box sx={{ position: 'absolute', top: 2, right: 4, zIndex: 2 }}>
             <Tooltip title={dock.labels.dock}>
               <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
                 <FontAwesomeIcon icon={faWindowRestore} />
