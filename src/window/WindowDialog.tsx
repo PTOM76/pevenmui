@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, type KeyboardEventHandler, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type KeyboardEventHandler, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Box, Dialog, DialogTitle, IconButton, Tooltip, type DialogProps } from '@mui/material'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -47,6 +47,13 @@ export function WindowDialog(p: Props) {
   const mode = p.mode ?? ctxMode
   const dock = useDock()
   const docked = !!p.dockable && !!dock && dock.isDocked(p.name)
+  // 別の窓に出しているあいだ、窓の位置を見張る。本体の窓の端に寄せて離したら、その端の欄に置く
+  const [popup, setPopup] = useState<Window | null>(null)
+  const trackWindow = dock?.trackWindow
+  useEffect(() => {
+    if (!popup || !p.dockable || !trackWindow) return
+    return trackWindow(p.name, popup)
+  }, [popup, p.dockable, p.name, trackWindow])
   // 欄に置くときは、開いている間タブとして登録する
   useEffect(() => {
     if (!docked || !p.open || !dock) return
@@ -91,7 +98,7 @@ export function WindowDialog(p: Props) {
   )
   if (mode === 'dialog') return dialog
   return (
-    <WindowPortal open={p.open} mode={mode} name={p.name} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
+    <WindowPortal open={p.open} mode={mode} name={p.name} onWindow={mode === 'popup' || mode === 'window' ? setPopup : undefined} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
       <Box
         onKeyDown={p.onKeyDown}
         sx={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}

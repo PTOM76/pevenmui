@@ -3,6 +3,7 @@
 // アプリは DockProvider で包み、画面の端に DockArea を置く
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { Box } from '@mui/material'
+import { watchWindowSnap } from './dockSnap'
 
 /** 欄を置ける端 */
 export type DockEdge = 'bottom' | 'left' | 'right' | 'top'
@@ -46,6 +47,11 @@ export interface DockApi {
   tabs: DockTab[]
   /** 欄に置いて開いているダイアログを、タブとして登録する。戻り値で外す */
   register: (tab: DockTab) => () => void
+  /**
+   * 別の窓（ポップアップ）に出しているダイアログの窓を見張る。本体の窓の端に寄せて離したら、その端の欄に置く
+   * （寄せている間は、置ける端に印を出す）。windowSnap が false なら何もしない。戻り値で見張りをやめる
+   */
+  trackWindow: (name: string, win: Window) => () => void
 }
 
 export const DockContext = createContext<DockApi | null>(null)
@@ -64,7 +70,7 @@ const loadDocked = (key: string): Record<string, DockEdge> => {
 }
 
 /** ドックの状態を持つ。storageKey に、欄に置くダイアログの名前と端を覚える */
-export function DockProvider({ labels, storageKey = 'peven.docked', children }: { labels: DockLabels; storageKey?: string; children: ReactNode }) {
+export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap = true, children }: { labels: DockLabels; storageKey?: string; /** 別の窓を端に寄せて離したら置くか */ windowSnap?: boolean; children: ReactNode }) {
   const [docked, setDockedMap] = useState(() => loadDocked(storageKey))
   const [hosts, setHosts] = useState<Record<string, HTMLElement>>({})
   const [visible, setVisibleMap] = useState<Record<string, boolean>>({})
@@ -94,17 +100,23 @@ export function DockProvider({ labels, storageKey = 'peven.docked', children }: 
     [],
   )
   const setVisible = useCallback((name: string, on: boolean) => setVisibleMap((map) => (map[name] === on ? map : { ...map, [name]: on })), [])
+  const [guide, setGuide] = useState<DockEdge | null>(null)
+  const trackWindow = useCallback(
+    (name: string, win: Window) => (windowSnap ? watchWindowSnap(win, { onGuide: setGuide, onDrop: (edge) => setDocked(name, true, edge) }) : () => {}),
+    [windowSnap, setDocked],
+  )
   const register = useCallback((tab: DockTab) => {
     setTabs((list) => [...list.filter((t) => t.name !== tab.name), tab])
     return () => setTabs((list) => list.filter((t) => t.name !== tab.name))
   }, [])
   const api = useMemo<DockApi>(
-    () => ({ labels, isDocked: (n) => n in docked, edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register }),
-    [labels, docked, setDocked, hosts, setHost, visible, setVisible, toolHost, tabs, register],
+    () => ({ labels, isDocked: (n) => n in docked, edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register, trackWindow }),
+    [labels, docked, setDocked, hosts, setHost, visible, setVisible, toolHost, tabs, register, trackWindow],
   )
   return (
     <DockContext.Provider value={api}>
       <ToolHostSetter.Provider value={setToolHost}>{children}</ToolHostSetter.Provider>
+      <SnapGuide edge={guide} />
     </DockContext.Provider>
   )
 }
@@ -119,4 +131,16 @@ const ToolHostSetter = createContext<(el: HTMLElement | null) => void>(() => {})
 export function DockToolHost() {
   const setToolHost = useContext(ToolHostSetter)
   return <Box ref={setToolHost} sx={{ display: 'flex', alignItems: 'center', minWidth: 0, overflowX: 'auto' }} />
+}
+
+/** 別の窓を端に寄せているあいだ、置ける端に出す印（本体の窓の端の帯。操作は受けない） */
+function SnapGuide({ edge }: { edge: DockEdge | null }) {
+  if (!edge) return null
+  const vertical = edge === 'left' || edge === 'right'
+  return (
+    <Box
+      aria-hidden
+      sx={{ position: 'fixed', zIndex: 1600, pointerEvents: 'none', bgcolor: 'primary.main', opacity: 0.25, border: 2, borderColor: 'primary.main', [edge]: 0, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: vertical ? '30%' : '35%' }}
+    />
+  )
 }

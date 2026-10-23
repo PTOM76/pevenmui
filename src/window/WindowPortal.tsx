@@ -40,6 +40,8 @@ interface Props {
   focusSignal?: number
   /** 別の窓を開いたあと、高さを中身に合わせる（中身の高さが決まっているダイアログ用。設定画面のように窓いっぱいに広がるものには使わない） */
   fitHeight?: boolean
+  /** 別の窓を開いたとき、その窓を渡す（閉じたとき null）。窓の位置を見張るのに使う */
+  onWindow?: (win: Window | null) => void
   /** 窓を開けなかったとき（未対応・ブロック・権限なし）に代わりに出すもの */
   fallback: ReactNode
   children: ReactNode
@@ -233,6 +235,8 @@ export function WindowPortal(p: Props) {
   onCloseRef.current = p.onClose
   const titleRef = useRef(p.title)
   titleRef.current = p.title
+  const onWindowRef = useRef(p.onWindow)
+  onWindowRef.current = p.onWindow
 
   useEffect(() => {
     if (!p.open) return
@@ -311,12 +315,14 @@ export function WindowPortal(p: Props) {
       doc.addEventListener('keydown', onKey)
       window.addEventListener('pagehide', closeChild)
       setOpened({ root, cache: createCache({ key: 'pwin', container: doc.head }) })
+      onWindowRef.current?.(w)
     })
     return () => {
       disposed = true
       remember()
       htmlObserver?.disconnect()
       window.removeEventListener('pagehide', closeChild)
+      if (win) onWindowRef.current?.(null)
       win?.close()
       setOpened(null)
     }
