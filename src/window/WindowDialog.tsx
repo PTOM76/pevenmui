@@ -4,7 +4,7 @@ import { Box, Dialog, DialogTitle, IconButton, Tooltip, type DialogProps } from 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faWindowRestore, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { WindowPortal, type WindowMode } from './WindowPortal'
-import { useDock } from './dock'
+import { useDock, type DockEdge } from './dock'
 
 /** アプリ全体のダイアログの出し方。WindowDialog はここから読む（既定はページ内のダイアログ） */
 export const WindowModeContext = createContext<WindowMode>('dialog')
@@ -28,7 +28,11 @@ interface Props {
   focusSignal?: number
   /** 出し方。未指定なら WindowModeContext に従う */
   mode?: WindowMode
-  /** 画面の下の欄（DockArea）に置けるようにする。ページ内のダイアログの題名の横にボタンが出て、置いたかどうかは name ごとに覚える（DockProvider の中だけ） */
+  /** 覚えた置き場所がないとき、標準で置く端（ダイアログにすると選ぶまで、欄に置く）。dockable のときだけ */
+  defaultDock?: DockEdge
+  /** 欄の標準の大きさ（px。欄が下か上なら高さ、左か右なら幅）。利用者が欄の大きさを変えていなければ使う */
+  dockSize?: number
+  /** 画面の端の欄（DockArea）に置けるようにする。ページ内のダイアログの題名の横にボタンが出て、置いたかどうかは name ごとに覚える（DockProvider の中だけ） */
   dockable?: boolean
   /** 別の窓で、欄に置くボタンを右端からずらす幅（px）。右端に、中身が自分のボタンを置くとき */
   dockInset?: number
@@ -46,7 +50,10 @@ export function WindowDialog(p: Props) {
   const ctxMode = useContext(WindowModeContext)
   const mode = p.mode ?? ctxMode
   const dock = useDock()
-  const docked = !!p.dockable && !!dock && dock.isDocked(p.name)
+  // 置く端: 覚えた置き場所、なければ標準の置き場所。ダイアログにすると選んでいれば、欄には置かない
+  const pref = dock?.edgeOf(p.name)
+  const edge: DockEdge | null = p.dockable && dock ? (pref === 'dialog' ? null : (pref ?? p.defaultDock ?? null)) : null
+  const docked = edge !== null
   // 別の窓に出しているあいだ、窓の位置を見張る。本体の窓の端に寄せて離したら、その端の欄に置く
   const [popup, setPopup] = useState<Window | null>(null)
   const trackWindow = dock?.trackWindow
@@ -57,9 +64,9 @@ export function WindowDialog(p: Props) {
   // 欄に置くときは、開いている間タブとして登録する
   useEffect(() => {
     if (!docked || !p.open || !dock) return
-    return dock.register({ name: p.name, title: p.title ?? p.name, onClose: () => p.onClose?.() })
+    return dock.register({ name: p.name, title: p.title ?? p.name, edge: edge!, size: p.dockSize, onClose: () => p.onClose?.() })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docked, p.open, p.name, p.title])
+  }, [docked, edge, p.open, p.name, p.title, p.dockSize])
   if (docked) {
     const host = dock?.hostOf(p.name)
     if (!p.open || !host || !dock?.isVisible(p.name)) return null
@@ -78,7 +85,7 @@ export function WindowDialog(p: Props) {
           <Box sx={{ display: 'flex', gap: 0.25 }}>
             {p.dockable && dock && (
               <Tooltip title={dock.labels.dock}>
-                <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
+                <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true, p.defaultDock)}>
                   <FontAwesomeIcon icon={faWindowRestore} />
                 </IconButton>
               </Tooltip>
@@ -107,7 +114,7 @@ export function WindowDialog(p: Props) {
         {p.dockable && dock && (
           <Box sx={{ position: 'absolute', top: 2, right: 4 + (p.dockInset ?? 0), zIndex: 2 }}>
             <Tooltip title={dock.labels.dock}>
-              <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true)}>
+              <IconButton size="small" aria-label={dock.labels.dock} onClick={() => dock.setDocked(p.name, true, p.defaultDock)}>
                 <FontAwesomeIcon icon={faWindowRestore} />
               </IconButton>
             </Tooltip>

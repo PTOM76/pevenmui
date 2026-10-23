@@ -23,16 +23,20 @@ export interface DockLabels {
 export interface DockTab {
   name: string
   title: string
+  /** 置いている端 */
+  edge: DockEdge
+  /** 欄の標準の大きさ（欄が下か上なら高さ、左か右なら幅。px。利用者が変えていなければ使う） */
+  size?: number
   onClose: () => void
 }
 
 export interface DockApi {
   labels: DockLabels
-  /** 名前のダイアログを欄に置く設定か */
+  /** 名前のダイアログを欄に置くと選んでいるか（覚えた設定。標準の置き場所は含めない） */
   isDocked: (name: string) => boolean
-  /** 置いている端（置いていなければ null） */
-  edgeOf: (name: string) => DockEdge | null
-  /** 置く、外す。edge を省くと、置いていた端（なければ下） */
+  /** 覚えた置き場所。端か、ダイアログにすると選んだ（'dialog'）か、まだ選んでいない（null。標準の置き場所に従う） */
+  edgeOf: (name: string) => DockEdge | 'dialog' | null
+  /** 置く、外す（ダイアログにする）。edge を省くと、置いていた端（なければ下） */
   setDocked: (name: string, docked: boolean, edge?: DockEdge) => void
   /** 欄の中の、そのダイアログの中身を入れる要素（欄にまだなければ null） */
   hostOf: (name: string) => HTMLElement | null
@@ -57,12 +61,12 @@ export interface DockApi {
 export const DockContext = createContext<DockApi | null>(null)
 export const useDock = () => useContext(DockContext)
 
-/** 覚えている置き場所（名前 → 端）。古い形（置いたダイアログの名前の配列）は、すべて下として読む */
-const loadDocked = (key: string): Record<string, DockEdge> => {
+/** 覚えている置き場所（名前 → 端、またはダイアログにすると選んだ 'dialog'）。古い形（置いたダイアログの名前の配列）は、すべて下として読む */
+const loadDocked = (key: string): Record<string, DockEdge | 'dialog'> => {
   try {
     const v: unknown = JSON.parse(localStorage.getItem(key) ?? '{}')
     if (Array.isArray(v)) return Object.fromEntries(v.filter((x): x is string => typeof x === 'string').map((n) => [n, 'bottom' as const]))
-    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter((e): e is [string, DockEdge] => DOCK_EDGES.includes(e[1] as DockEdge)))
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter((e): e is [string, DockEdge | 'dialog'] => e[1] === 'dialog' || DOCK_EDGES.includes(e[1] as DockEdge)))
   } catch {
     // 読めなければ、何も置いていないことにする
   }
@@ -80,7 +84,7 @@ export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap =
     (name: string, on: boolean, edge?: DockEdge) =>
       setDockedMap((map) => {
         const { [name]: old, ...rest } = map
-        const next = on ? { ...rest, [name]: edge ?? old ?? 'bottom' } : rest
+        const next: Record<string, DockEdge | 'dialog'> = { ...rest, [name]: on ? (edge ?? (old && old !== 'dialog' ? old : 'bottom')) : 'dialog' }
         try {
           localStorage.setItem(storageKey, JSON.stringify(next))
         } catch {
@@ -110,7 +114,7 @@ export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap =
     return () => setTabs((list) => list.filter((t) => t.name !== tab.name))
   }, [])
   const api = useMemo<DockApi>(
-    () => ({ labels, isDocked: (n) => n in docked, edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register, trackWindow }),
+    () => ({ labels, isDocked: (n) => !!docked[n] && docked[n] !== 'dialog', edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register, trackWindow }),
     [labels, docked, setDocked, hosts, setHost, visible, setVisible, toolHost, tabs, register, trackWindow],
   )
   return (

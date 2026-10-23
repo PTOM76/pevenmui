@@ -37,7 +37,7 @@ function DockTab(props: IDockviewPanelHeaderProps) {
   if (!dock) return null
   const name = props.api.id
   const tab = dock.tabs.find((t) => t.name === name)
-  const edge = dock.edgeOf(name)
+  const edge = tab?.edge
   return (
     <Box
       onContextMenu={(e) => {
@@ -95,9 +95,11 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
   const dock = useDock()
   const { dark } = usePalette()
   const [api, setApi] = useState<DockviewApi | null>(null)
-  const [size, setSize] = usePersistentNumber(sizeKey ?? (edge === 'bottom' ? 'peven.dockHeight' : `peven.dock.${edge}`), initialSize)
+  // 利用者が大きさを変えていなければ（覚えた値が 0）、置いたダイアログの標準の大きさ、なければ initialSize
+  const [stored, setSize] = usePersistentNumber(sizeKey ?? (edge === 'bottom' ? 'peven.dockHeight' : `peven.dock.${edge}`), 0)
   const drag = useRef<{ p: number; s: number } | null>(null)
-  const mine = dock ? dock.tabs.filter((t) => dock.edgeOf(t.name) === edge) : []
+  const mine = dock ? dock.tabs.filter((t) => t.edge === edge) : []
+  const size = stored || Math.max(0, ...mine.map((t) => t.size ?? 0)) || initialSize
   const key = mine.map((t) => `${t.name}\n${t.title}`).join('\n\n')
   // 欄に置いたダイアログと、dockview のパネルをそろえる
   useEffect(() => {
@@ -145,7 +147,7 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
         }}
         onPointerMove={(e) => drag.current && setSize(clamp(drag.current.s + sign * (pos(e) - drag.current.p), max))}
         onPointerUp={() => (drag.current = null)}
-        onDoubleClick={() => setSize(initialSize)}
+        onDoubleClick={() => setSize(0)}
         sx={{ position: 'absolute', [inner]: -3, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: 5, cursor: vertical ? 'col-resize' : 'row-resize', zIndex: 3, touchAction: 'none', '&:hover, &:active': { bgcolor: 'primary.main' } }}
       />
       <Box
