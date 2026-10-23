@@ -61,6 +61,8 @@ export { WindowPortal, autoWindowMode, type WindowMode } from './window/WindowPo
 export { WindowDialog, WindowModeContext } from './window/WindowDialog'
 export { DockProvider, DockToolHost, useDock, DOCK_EDGES, type DockLabels, type DockEdge } from './window/dock'
 export { DockArea } from './window/DockArea'
+export { useScreensets, type NamedScreenset } from './window/screensets'
+export { type Screenset } from './window/dockLayout'
 
 // ---- ファイル、処理の進み具合、そのほか ----
 export { useFileDrop, useFilesDrop } from './hooks/useFileDrop'

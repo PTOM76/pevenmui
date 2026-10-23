@@ -1,4 +1,4 @@
-// ドックの配置（分割の並び、タブの組、大きさ）を覚える。dockview の保存形式（toJSON）をそのまま持ち、戻すときは、今開いているパネルだけを残して使う
+// ドックの配置（分割の並び、タブの組、大きさ）を覚える。名前を付けた配置（スクリーンセット）の取り出しと書き込みもここ。dockview の保存形式（toJSON）をそのまま持ち、戻すときは、今開いているパネルだけを残して使う
 import type { DockEdge } from './dock'
 
 /** dockview の保存形式のうち、ここで触る部分（残りはそのまま持ち回る） */
@@ -84,6 +84,56 @@ export function pruneLayout(layout: SavedLayout, keep: ReadonlySet<string>): Sav
   const activeGroup = layout.activeGroup && alive.includes(layout.activeGroup) ? layout.activeGroup : firstGroup(wrapped)
   const { floatingGroups: _f, popoutGroups: _p, edgeGroups: _e, ...rest } = layout
   return { ...rest, grid: { ...layout.grid, root: wrapped }, panels, ...(activeGroup ? { activeGroup } : {}) }
+}
+
+const EDGES: DockEdge[] = ['bottom', 'left', 'right', 'top']
+
+/** 欄の大きさを覚えるキー（DockArea の sizeKey。省いたときの名前） */
+export const defaultSizeKey = (edge: DockEdge) => (edge === 'bottom' ? 'peven.dockHeight' : `peven.dock.${edge}`)
+/** 端ごとに、今の DockArea が使っている大きさのキー */
+const sizeKeys = new Map<DockEdge, string>()
+export const setSizeKey = (edge: DockEdge, k: string) => void sizeKeys.set(edge, k)
+const sizeKey = (edge: DockEdge) => sizeKeys.get(edge) ?? defaultSizeKey(edge)
+
+/** 名前を付けて覚える配置（スクリーンセット）。置き場所、端ごとの分割とタブの組、欄の大きさ、開いていたパネル */
+export interface Screenset {
+  places: Record<string, DockEdge | 'dialog'>
+  layouts: Partial<Record<DockEdge, SavedLayout>>
+  sizes: Partial<Record<DockEdge, number>>
+  open: string[]
+}
+
+/** 今の配置を取り出す（端ごとの配置と大きさは、覚えている値から） */
+export function captureScreenset(places: Record<string, DockEdge | 'dialog'>, open: string[]): Screenset {
+  const layouts: Screenset['layouts'] = {}
+  const sizes: Screenset['sizes'] = {}
+  for (const edge of EDGES) {
+    const l = loadLayout(edge)
+    if (l) layouts[edge] = l
+    try {
+      const v = Number(localStorage.getItem(sizeKey(edge)))
+      if (Number.isFinite(v) && v > 0) sizes[edge] = v
+    } catch {
+      // 読めなければ標準の大きさ
+    }
+  }
+  return { places, layouts, sizes, open }
+}
+
+/** 配置の、端ごとの分割と大きさを書く（欄を作り直すと、これを読む） */
+export function writeScreenset(s: Screenset) {
+  for (const edge of EDGES) {
+    const l = s.layouts[edge]
+    try {
+      if (l) localStorage.setItem(key(edge), JSON.stringify(l))
+      else localStorage.removeItem(key(edge))
+      const v = s.sizes[edge]
+      if (v) localStorage.setItem(sizeKey(edge), String(v))
+      else localStorage.removeItem(sizeKey(edge))
+    } catch {
+      // 書けなくても、置き場所は戻る
+    }
+  }
 }
 
 /** 配置に入っているパネルの名前 */

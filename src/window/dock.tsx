@@ -4,6 +4,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Box, alpha } from '@mui/material'
 import { watchWindowSnap } from './dockSnap'
+import { captureScreenset, writeScreenset, type Screenset } from './dockLayout'
 
 /** 欄を置ける端 */
 export type DockEdge = 'bottom' | 'left' | 'right' | 'top'
@@ -63,6 +64,12 @@ export interface DockApi {
    * （寄せている間は、置ける端に印を出す）。windowSnap が false なら何もしない。戻り値で見張りをやめる
    */
   trackWindow: (name: string, win: Window) => () => void
+  /** 今の配置（スクリーンセット）を取り出す */
+  snapshot: () => Screenset
+  /** 配置を戻す。今欄に置いているパネルのうち、配置で開いていなかったものは閉じる。戻り値は、配置で開いていたパネルの名前（開くのはアプリ） */
+  applyScreenset: (s: Screenset) => string[]
+  /** 配置を戻すたびに増える（欄を作り直す合図） */
+  generation: number
 }
 
 export const DockContext = createContext<DockApi | null>(null)
@@ -133,13 +140,31 @@ export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap =
     (name: string, win: Window) => (windowSnap ? watchWindowSnap(win, { onGuide: setGuide, onDrop: (edge) => setDocked(name, true, edge) }) : () => {}),
     [windowSnap, setDocked],
   )
+  const [generation, setGeneration] = useState(0)
+  const applyScreenset = useCallback(
+    (s: Screenset) => {
+      setDockedMap(() => {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(s.places))
+        } catch {
+          // 保存できなくても、このセッション中は使う
+        }
+        return s.places
+      })
+      writeScreenset(s)
+      for (const t of tabs) if (!s.open.includes(t.name)) t.onClose()
+      setGeneration((g) => g + 1)
+      return s.open
+    },
+    [storageKey, tabs],
+  )
   const register = useCallback((tab: DockTab) => {
     setTabs((list) => [...list.filter((t) => t.name !== tab.name), tab])
     return () => setTabs((list) => list.filter((t) => t.name !== tab.name))
   }, [])
   const api = useMemo<DockApi>(
-    () => ({ labels, isDocked: (n) => !!docked[n] && docked[n] !== 'dialog', edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register, trackWindow, tearOf: (n) => tear[n] ?? null, tearOff, clearTear }),
-    [labels, docked, setDocked, hosts, setHost, visible, setVisible, toolHost, tabs, register, trackWindow, tear, tearOff, clearTear],
+    () => ({ labels, isDocked: (n) => !!docked[n] && docked[n] !== 'dialog', edgeOf: (n) => docked[n] ?? null, setDocked, hostOf: (n) => hosts[n] ?? null, setHost, isVisible: (n) => visible[n] ?? false, setVisible, toolHost, tabs, register, trackWindow, tearOf: (n) => tear[n] ?? null, tearOff, clearTear, snapshot: () => captureScreenset(docked, tabs.map((t) => t.name)), applyScreenset, generation }),
+    [labels, docked, setDocked, hosts, setHost, visible, setVisible, toolHost, tabs, register, trackWindow, tear, tearOff, clearTear, applyScreenset, generation],
   )
   return (
     <DockContext.Provider value={api}>

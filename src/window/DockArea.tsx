@@ -10,7 +10,7 @@ import { faClone, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { usePalette } from '../hooks/usePalette'
 import { usePersistentNumber } from '../layout/Splitter'
 import { DOCK_EDGES, useDock, type DockEdge } from './dock'
-import { loadLayout, pruneLayout, saveLayout, type SavedLayout } from './dockLayout'
+import { defaultSizeKey, loadLayout, pruneLayout, saveLayout, setSizeKey, type SavedLayout } from './dockLayout'
 
 /** パネルの中身を入れる要素を、ドックの状態に知らせる（中身は WindowDialog が portal で入れる） */
 function HostPanel(props: IDockviewPanelProps) {
@@ -94,12 +94,21 @@ const COMPONENTS = { host: HostPanel }
 const MIN = 160
 const clamp = (v: number, max: number) => Math.max(MIN, Math.min(max - MIN, v))
 
-export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge?: DockEdge; sizeKey?: string; initialSize?: number }) {
+type DockAreaProps = { edge?: DockEdge; sizeKey?: string; initialSize?: number }
+
+/** 配置（スクリーンセット）を戻したら、欄を作り直して、書いた配置と大きさを読み直す */
+export function DockArea(props: DockAreaProps) {
   const dock = useDock()
+  return <EdgeArea key={dock?.generation ?? 0} {...props} />
+}
+
+function EdgeArea({ edge = 'bottom', sizeKey, initialSize = 440 }: DockAreaProps) {
+  const dock = useDock()
+  setSizeKey(edge, sizeKey ?? defaultSizeKey(edge))
   const { dark } = usePalette()
   const [api, setApi] = useState<DockviewApi | null>(null)
   // 利用者が大きさを変えていなければ（覚えた値が 0）、置いたダイアログの標準の大きさ、なければ initialSize
-  const [stored, setSize] = usePersistentNumber(sizeKey ?? (edge === 'bottom' ? 'peven.dockHeight' : `peven.dock.${edge}`), 0)
+  const [stored, setSize] = usePersistentNumber(sizeKey ?? defaultSizeKey(edge), 0)
   const drag = useRef<{ p: number; s: number } | null>(null)
   const restored = useRef<DockviewApi | null>(null)
   // 配置が変わったら（少し待って）覚える。パネルがすべてなくなったときは、前の配置を残す
