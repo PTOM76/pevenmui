@@ -54,12 +54,13 @@ export function WindowDialog(p: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docked, p.open, p.name, p.title])
   if (docked) {
-    if (!p.open || !dock?.host || dock.active !== p.name) return null
+    const host = dock?.hostOf(p.name)
+    if (!p.open || !host || !dock?.isVisible(p.name)) return null
     return createPortal(
       <Box onKeyDown={p.onKeyDown} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}>
         {p.children}
       </Box>,
-      dock.host,
+      host,
     )
   }
   const dialog = (
