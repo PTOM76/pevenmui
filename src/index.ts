@@ -48,6 +48,9 @@ export { ShortcutsDialog } from './keymap/ShortcutsDialog'
 export { useShortcuts, textSelected, type ShortcutHandlers } from './keymap/useShortcuts'
 export { resolveKeymap, actionKeys, comboOf, actionOf, comboLabel, keyLabelOf, keymapRows, type KeyAction, type Keymap, type KeymapOverrides, type DefaultKeys } from './keymap/keymap'
 
+// ---- コマンド（キー、メニュー、ボタンが名前で呼ぶ操作） ----
+export { commandDefiner, useCommandSet, useCommandKeys, type CommandSpec, type CommandSet, type Translate } from './commands/commands'
+
 // ---- ダイアログ、別ウィンドウ ----
 export { useConfirm, type ConfirmRequest } from './dialog/ConfirmDialog'
 export { enterToSubmit } from './dialog/enterToSubmit'
