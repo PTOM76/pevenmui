@@ -1,7 +1,7 @@
 // ドックの状態。WindowDialog の dockable なダイアログを、ダイアログの代わりに画面の端の欄（DockArea）に置ける。
 // どの端（下、左、右、上）に置くかは、ダイアログの名前（name）ごとに覚える。同じ端に複数置けば、欄の中で並べたり、タブで切り替えたりできる（DockArea）。
 // アプリは DockProvider で包み、画面の端に DockArea を置く
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Box } from '@mui/material'
 import { watchWindowSnap } from './dockSnap'
 
@@ -121,6 +121,7 @@ export function DockProvider({ labels, storageKey = 'peven.docked', windowSnap =
     <DockContext.Provider value={api}>
       <ToolHostSetter.Provider value={setToolHost}>{children}</ToolHostSetter.Provider>
       <SnapGuide edge={guide} />
+      <EdgeDropZones edgeLabels={labels.edges} onDrop={(name, edge) => setDocked(name, true, edge)} />
     </DockContext.Provider>
   )
 }
@@ -146,5 +147,67 @@ function SnapGuide({ edge }: { edge: DockEdge | null }) {
       aria-hidden
       sx={{ position: 'fixed', zIndex: 1600, pointerEvents: 'none', bgcolor: 'primary.main', opacity: 0.25, border: 2, borderColor: 'primary.main', [edge]: 0, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: vertical ? '30%' : '35%' }}
     />
+  )
+}
+
+/** 画面の端の帯の幅（px） */
+const ZONE = 56
+
+/**
+ * 欄のタブをドラッグしているあいだ、画面の 4 つの端に出す落とす先。落とすと、その端の欄に置く。
+ * タブは dockview の中でも分割して並べられる（欄の中は dockview が受ける）が、欄をまたいだ移動は、ここで受ける
+ */
+function EdgeDropZones({ edgeLabels, onDrop }: { edgeLabels?: Record<DockEdge, string>; onDrop: (name: string, edge: DockEdge) => void }) {
+  const [name, setName] = useState<string | null>(null)
+  const [over, setOver] = useState<DockEdge | null>(null)
+  useEffect(() => {
+    const start = (e: DragEvent) => {
+      const tab = (e.target as Element | null)?.closest?.('.dv-tab')
+      const n = tab?.querySelector('[data-dock-name]')?.getAttribute('data-dock-name')
+      if (n) setName(n)
+    }
+    const end = () => {
+      setName(null)
+      setOver(null)
+    }
+    document.addEventListener('dragstart', start, true)
+    document.addEventListener('dragend', end, true)
+    document.addEventListener('drop', end, true)
+    return () => {
+      document.removeEventListener('dragstart', start, true)
+      document.removeEventListener('dragend', end, true)
+      document.removeEventListener('drop', end, true)
+    }
+  }, [])
+  if (!name) return null
+  const place: Record<DockEdge, object> = {
+    left: { left: 0, top: 0, bottom: 0, width: ZONE },
+    right: { right: 0, top: 0, bottom: 0, width: ZONE },
+    top: { top: 0, left: ZONE, right: ZONE, height: ZONE },
+    bottom: { bottom: 0, left: ZONE, right: ZONE, height: ZONE },
+  }
+  return (
+    <>
+      {DOCK_EDGES.map((edge) => (
+        <Box
+          key={edge}
+          data-dock-zone={edge}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setOver(edge)
+          }}
+          onDragLeave={() => setOver((o) => (o === edge ? null : o))}
+          onDrop={(e) => {
+            e.preventDefault()
+            onDrop(name, edge)
+            setName(null)
+            setOver(null)
+          }}
+          sx={{ position: 'fixed', zIndex: 1700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'primary.contrastText', border: 2, borderColor: 'primary.main', bgcolor: over === edge ? 'primary.main' : 'transparent', backgroundImage: over === edge ? 'none' : 'linear-gradient(rgba(127,127,127,.18), rgba(127,127,127,.18))', opacity: over === edge ? 0.7 : 0.9, ...place[edge] }}
+        >
+          {over === edge ? edgeLabels?.[edge] : null}
+        </Box>
+      ))}
+    </>
   )
 }

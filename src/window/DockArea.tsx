@@ -40,6 +40,7 @@ function DockTab(props: IDockviewPanelHeaderProps) {
   const edge = tab?.edge
   return (
     <Box
+      data-dock-name={name}
       onContextMenu={(e) => {
         if (!dock.labels.edges) return
         e.preventDefault()
@@ -99,7 +100,9 @@ export function DockArea({ edge = 'bottom', sizeKey, initialSize = 440 }: { edge
   const [stored, setSize] = usePersistentNumber(sizeKey ?? (edge === 'bottom' ? 'peven.dockHeight' : `peven.dock.${edge}`), 0)
   const drag = useRef<{ p: number; s: number } | null>(null)
   const mine = dock ? dock.tabs.filter((t) => t.edge === edge) : []
-  const size = stored || Math.max(0, ...mine.map((t) => t.size ?? 0)) || initialSize
+  // ダイアログの標準の大きさは高さなので、下と上の欄だけに使う
+  const hint = edge === 'bottom' || edge === 'top' ? Math.max(0, ...mine.map((t) => t.size ?? 0)) : 0
+  const size = stored || hint || initialSize
   const key = mine.map((t) => `${t.name}\n${t.title}`).join('\n\n')
   // 欄に置いたダイアログと、dockview のパネルをそろえる
   useEffect(() => {
