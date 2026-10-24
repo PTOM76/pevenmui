@@ -98,6 +98,7 @@ export { DataRow, DangerButton, DataHeading, DataText } from './settings/DataRow
 export { EmptyState } from './layout/EmptyState'
 export { WindowLimitScreen } from './layout/WindowLimitScreen'
 export { SliderRow, COMPACT_SLIDER_SX } from './settings/SliderRow'
+export { LogRunRow } from './settings/LogRunRow'
 export { RenameDialog } from './dialog/RenameDialog'
 export { PresetMenu, type Preset, type PresetLabels } from './menu/PresetMenu'
 export { HistoryDialog } from './dialog/HistoryDialog'
