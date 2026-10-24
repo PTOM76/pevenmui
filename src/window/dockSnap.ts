@@ -40,10 +40,18 @@ export const rectOf = (w: Window): Rect => ({ x: w.screenX, y: w.screenY, w: w.o
  */
 export function watchWindowSnap(win: Window, o: { onGuide: (edge: DockEdge | null) => void; onDrop: (edge: DockEdge) => void; intervalMs?: number; settleMs?: number }): () => void {
   const interval = o.intervalMs ?? 120
-  const settle = o.settleMs ?? 500
+  const settle = o.settleMs ?? 800
   let last = rectOf(win)
-  let moved = false
+  // 続けて動いた回数。1 回で飛んだだけ（OS が窓を寄せた、画面を移ったなど）は、手で動かしたとはみなさない
+  let moves = 0
   let movedAt = 0
+  // 動かしているあいだに寄っていた端。止めたときの端と同じときだけ置く
+  let guided: DockEdge | null = null
+  const reset = () => {
+    moves = 0
+    guided = null
+    o.onGuide(null)
+  }
   const id = setInterval(() => {
     if (win.closed) return
     const r = rectOf(win)
@@ -52,20 +60,19 @@ export function watchWindowSnap(win: Window, o: { onGuide: (edge: DockEdge | nul
     last = r
     const now = performance.now()
     if (changed) {
-      moved = true
+      moves++
       movedAt = now
-      o.onGuide(snapEdge(r, rectOf(window)))
+      guided = moves >= 2 ? snapEdge(r, rectOf(window)) : null
+      o.onGuide(guided)
       return
     }
     if (resized) {
-      moved = false
-      o.onGuide(null)
+      reset()
       return
     }
-    if (moved && now - movedAt >= settle) {
-      moved = false
-      o.onGuide(null)
-      const edge = snapEdge(r, rectOf(window))
+    if (moves > 0 && now - movedAt >= settle) {
+      const edge = moves >= 2 && guided === snapEdge(r, rectOf(window)) ? guided : null
+      reset()
       if (edge) o.onDrop(edge)
     }
   }, interval)

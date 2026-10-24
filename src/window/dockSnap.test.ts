@@ -59,6 +59,8 @@ describe('watchWindowSnap', () => {
 
   it('端に寄せて止めると、その端に置く（動かしているあいだは印を出す）', () => {
     const { w, guides, drops, tick } = setup()
+    move(w, win(300, 400))
+    tick(100)
     move(w, win(100, 400))
     tick(100)
     expect(guides.at(-1)).toBe('left')
@@ -71,6 +73,14 @@ describe('watchWindowSnap', () => {
 
   it('動かしていなければ置かない（開いた位置が端に近くても）', () => {
     const { drops, tick } = setup(win(100, 400))
+    tick(1000)
+    expect(drops).toEqual([])
+  })
+
+  it('1 回で飛んだだけ（OS が窓を寄せたなど）は置かない', () => {
+    const { w, drops, tick } = setup()
+    move(w, win(100, 400))
+    tick(100)
     tick(1000)
     expect(drops).toEqual([])
   })
