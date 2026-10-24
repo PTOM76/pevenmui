@@ -40,6 +40,7 @@ export function DrillMenu({ entries, onClose }: { entries: MenuEntry[]; onClose:
             <FontAwesomeIcon icon={faCheck} />
           </ListItemIcon>
         )}
+        {e.icon && <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>{e.icon}</ListItemIcon>}
         <ListItemText>{e.label}</ListItemText>
       </MenuItem>
     ),

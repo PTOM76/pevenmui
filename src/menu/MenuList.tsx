@@ -1,6 +1,6 @@
 import { DrillMenu } from './DrillMenu'
 import { vh } from '../uiScale'
-import { createContext, useContext, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, MenuList, Paper, Popper, Typography } from '@mui/material'
 import { pevenTokens } from '../tokens'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -15,6 +15,8 @@ export type MenuEntry =
       disabled?: boolean
       /** 指定すると ON/OFF の項目になり、ON のときチェックを表示する */
       checked?: boolean
+      /** 文字の前に置く小さな図（形状の見本など） */
+      icon?: ReactNode
       onClick: () => void
     }
   | { label: string; disabled?: boolean; submenu: MenuEntry[] }
@@ -166,6 +168,7 @@ export function renderEntries(entries: MenuEntry[], close: () => void, keyPrefix
             <FontAwesomeIcon icon={faCheck} />
           </ListItemIcon>
         )}
+        {e.icon && <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>{e.icon}</ListItemIcon>}
         <ListItemText>{e.label}</ListItemText>
         {e.shortcut && (
           <Typography variant="body2" color="text.secondary" sx={{ ml: 3 }}>
