@@ -21,6 +21,8 @@ interface Props {
   /** 別の窓の大きさ */
   width: number
   height: number
+  /** 別の窓の高さを中身に合わせない（中身が中でスクロールする、縦に長くなりやすいダイアログ）。既定は合わせる */
+  fixedHeight?: boolean
   onKeyDown?: KeyboardEventHandler<HTMLElement>
   /** ページ内のダイアログのときの指定（maxWidth など） */
   dialogProps?: Partial<DialogProps>
@@ -114,7 +116,7 @@ export function WindowDialog(p: Props) {
   )
   if (mode === 'dialog') return dialog
   return (
-    <WindowPortal open={p.open} mode={mode} name={p.name} at={tearAt ?? undefined} onWindow={mode === 'popup' || mode === 'window' ? setPopup : undefined} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
+    <WindowPortal open={p.open} mode={mode} name={p.name} at={tearAt ?? undefined} onWindow={mode === 'popup' || mode === 'window' ? setPopup : undefined} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight={!p.fixedHeight} onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
       <Box
         onKeyDown={p.onKeyDown}
         sx={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}
