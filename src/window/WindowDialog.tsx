@@ -9,6 +9,9 @@ import { useDock, type DockEdge } from './dock'
 /** アプリ全体のダイアログの出し方。WindowDialog はここから読む（既定はページ内のダイアログ） */
 export const WindowModeContext = createContext<WindowMode>('dialog')
 
+/** name ごとの「開こうとした回数」。変わると、開いている別の窓を手前に出す（focusSignal を省いたとき。useDialogs の openCount を渡す） */
+export const WindowFocusContext = createContext<((name: string) => number) | null>(null)
+
 interface Props {
   open: boolean
   /** 未指定なら閉じられない（処理中など）。別の窓は × で閉じられてしまうので、そのときも呼ぶ */
@@ -52,6 +55,8 @@ interface Props {
  */
 export function WindowDialog(p: Props) {
   const ctxMode = useContext(WindowModeContext)
+  const focusOf = useContext(WindowFocusContext)
+  const focusSignal = p.focusSignal ?? focusOf?.(p.name)
   const dock = useDock()
   // 欄のタブを本体の窓の外へ出したときは、その位置に別の窓（ポップアップ）で開く（閉じるまで）
   const tearAt = dock?.tearOf(p.name) ?? null
@@ -116,7 +121,7 @@ export function WindowDialog(p: Props) {
   )
   if (mode === 'dialog') return dialog
   return (
-    <WindowPortal open={p.open} mode={mode} name={p.name} at={tearAt ?? undefined} onWindow={mode === 'popup' || mode === 'window' ? setPopup : undefined} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight={!p.fixedHeight} onClose={() => p.onClose?.()} focusSignal={p.focusSignal} fallback={dialog}>
+    <WindowPortal open={p.open} mode={mode} name={p.name} at={tearAt ?? undefined} onWindow={mode === 'popup' || mode === 'window' ? setPopup : undefined} title={p.windowTitle ?? p.title ?? ''} width={p.width} height={p.height} fitHeight={!p.fixedHeight} onClose={() => p.onClose?.()} focusSignal={focusSignal} fallback={dialog}>
       <Box
         onKeyDown={p.onKeyDown}
         sx={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', '& > .MuiDialogContent-root': { flex: 1, overflowY: 'auto' } }}
