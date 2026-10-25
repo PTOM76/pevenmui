@@ -53,7 +53,8 @@ export const createPevenTheme = (desktop: boolean, overrides: PevenThemeOptions 
         body: { userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'pan-x pan-y' },
         // 日本語を文節の切れ目で折り返す（未対応のブラウザは今までどおり文字単位）。html の lang が ja のときに効く
         'html:lang(ja) body': { wordBreak: 'auto-phrase' },
-        'input, textarea, [contenteditable="true"], .selectable': { userSelect: 'text', WebkitUserSelect: 'text' },
+        // エラーの文（入力欄の下のエラー、Alert とトースト）は、付け忘れても選べるようにする（報告にコピーできるように）
+        'input, textarea, [contenteditable="true"], .selectable, .MuiFormHelperText-root.Mui-error, [role="alert"]': { userSelect: 'text', WebkitUserSelect: 'text' },
       },
     },
     MuiButton: { defaultProps: { disableElevation: true } },
