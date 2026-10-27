@@ -87,12 +87,19 @@ const opened = new WeakMap<File, FileHandle>()
 /** `file` を開いたときの参照（選ぶ画面などから開いたときだけ。上書き保存に使う） */
 export const fileRefOf = (file: File): SavedFile | undefined => opened.get(file)
 
-const writeTo = (handle: FileHandle, remember: boolean): NonNullable<SaveTarget> => ({
+/** `ready` は選んだ直後に開いておいた書き込み口（長い処理の後で開くと、ハンドルが使えなくなっていることがあるため） */
+const writeTo = (handle: FileHandle, remember: boolean, ready?: Awaited<ReturnType<FileHandle['createWritable']>>): NonNullable<SaveTarget> => ({
   file: handle,
   write: async (blob) => {
-    const w = await handle.createWritable()
-    await w.write(blob)
-    await w.close()
+    try {
+      const w = ready ?? (await handle.createWritable())
+      await w.write(blob)
+      await w.close()
+    } catch {
+      // 書き込めなかったとき（長い処理の間にハンドルが使えなくなったなど）は、ダウンロードで保存する
+      downloadBlob(blob, handle.name)
+      return
+    }
     if (remember) void addRecent(handle)
   },
 })
@@ -125,7 +132,9 @@ export async function pickSaveTarget(
   if (!pick || !canPickFiles()) return download
   try {
     const handle = await pick({ suggestedName: fileName, ...pickerBase(kind), types: [{ description: type.description, accept: { [type.mime]: [type.ext] } }] })
-    return writeTo(handle, remember)
+    // 書き込み口を先に開いておく。開けないときは、処理を始める前にダウンロードに切り替える
+    const ready = await handle.createWritable().catch(() => null)
+    return ready ? writeTo(handle, remember, ready) : download
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') return null
     return download
