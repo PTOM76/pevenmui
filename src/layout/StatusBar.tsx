@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { Box, ButtonBase, Stack, Tooltip, type SxProps, type Theme } from '@mui/material'
 import { pevenTokens } from '../tokens'
 
@@ -26,7 +26,7 @@ export function StatusItem({ children, secondary, sx }: { children: ReactNode; s
 }
 
 /** ステータスバーの押せる項目（長い文字は … で切る） */
-export function StatusButton({ children, title, disabled, onClick, maxWidth = 280 }: { children: ReactNode; title?: string; disabled?: boolean; onClick?: () => void; maxWidth?: number }) {
+export function StatusButton({ children, title, disabled, onClick, maxWidth = 280 }: { children: ReactNode; title?: string; disabled?: boolean; onClick?: (e: MouseEvent<HTMLElement>) => void; maxWidth?: number }) {
   const button = (
     <ButtonBase
       disabled={disabled}
