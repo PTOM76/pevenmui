@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Box } from '@mui/material'
 
-/** localStorage に数値を保存する（使えない環境ではこのセッション中だけ覚える） */
+/** localStorage に数値を保存する（使えない環境ではこのセッション中だけ覚える）。3 つ目は、ドラッグ中の更新（描き直しは 1 フレームに 1 回、保存は離したときだけ） */
 export function usePersistentNumber(key: string, initial: number) {
   const [value, setValue] = useState(() => {
     try {
@@ -22,7 +22,26 @@ export function usePersistentNumber(key: string, initial: number) {
     },
     [key],
   )
-  return [value, set] as const
+  const pending = useRef<number | null>(null)
+  const frame = useRef(0)
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+  const drag = useRef({
+    move: (v: number) => {
+      pending.current = v
+      if (frame.current) return
+      frame.current = requestAnimationFrame(() => {
+        frame.current = 0
+        if (pending.current !== null) setValue(pending.current)
+      })
+    },
+    end: () => {
+      cancelAnimationFrame(frame.current)
+      frame.current = 0
+      if (pending.current !== null) set(pending.current)
+      pending.current = null
+    },
+  }).current
+  return [value, set, drag] as const
 }
 
 /**
@@ -30,7 +49,7 @@ export function usePersistentNumber(key: string, initial: number) {
  * ダブルクリック（元の幅に戻す）で操作でき、幅は次回も引き継ぐ
  */
 export function usePanelWidth(key: string, initial: number, min: number, max: number, side: 'right' | 'left' = 'right') {
-  const [width, setWidth] = usePersistentNumber(key, initial)
+  const [width, setWidth, drag] = usePersistentNumber(key, initial)
   const clamp = (v: number) => Math.min(max, Math.max(min, v))
   const dragRef = useRef<{ x: number; w: number } | null>(null)
 
@@ -47,9 +66,10 @@ export function usePanelWidth(key: string, initial: number, min: number, max: nu
         dragRef.current = { x: e.clientX, w: width }
       }}
       // 右側のパネルは左へ動かすと広がる。左側のパネル（side='left'）は右へ動かすと広がる
-      onPointerMove={(e) => dragRef.current && setWidth(clamp(dragRef.current.w + (side === 'left' ? 1 : -1) * (e.clientX - dragRef.current.x)))}
+      onPointerMove={(e) => dragRef.current && drag.move(clamp(dragRef.current.w + (side === 'left' ? 1 : -1) * (e.clientX - dragRef.current.x)))}
       onPointerUp={() => {
         dragRef.current = null
+        drag.end()
       }}
       onDoubleClick={() => setWidth(initial)}
       onKeyDown={(e) => {

@@ -108,7 +108,7 @@ function EdgeArea({ edge = 'bottom', sizeKey, initialSize = 440 }: DockAreaProps
   const { dark } = usePalette()
   const [api, setApi] = useState<DockviewApi | null>(null)
   // 利用者が大きさを変えていなければ（覚えた値が 0）、置いたダイアログの標準の大きさ、なければ initialSize
-  const [stored, setSize] = usePersistentNumber(sizeKey ?? defaultSizeKey(edge), 0)
+  const [stored, setSize, dragSize] = usePersistentNumber(sizeKey ?? defaultSizeKey(edge), 0)
   const drag = useRef<{ p: number; s: number } | null>(null)
   const restored = useRef<DockviewApi | null>(null)
   // 配置が変わったら（少し待って）覚える。パネルがすべてなくなったときは、前の配置を残す
@@ -192,8 +192,11 @@ function EdgeArea({ edge = 'bottom', sizeKey, initialSize = 440 }: DockAreaProps
           e.currentTarget.setPointerCapture(e.pointerId)
           drag.current = { p: pos(e), s: value }
         }}
-        onPointerMove={(e) => drag.current && setSize(clamp(drag.current.s + sign * (pos(e) - drag.current.p), max))}
-        onPointerUp={() => (drag.current = null)}
+        onPointerMove={(e) => drag.current && dragSize.move(clamp(drag.current.s + sign * (pos(e) - drag.current.p), max))}
+        onPointerUp={() => {
+          drag.current = null
+          dragSize.end()
+        }}
         onDoubleClick={() => setSize(0)}
         sx={{ position: 'absolute', [inner]: -3, [vertical ? 'top' : 'left']: 0, [vertical ? 'bottom' : 'right']: 0, [vertical ? 'width' : 'height']: 5, cursor: vertical ? 'col-resize' : 'row-resize', zIndex: 3, touchAction: 'none', '&:hover, &:active': { bgcolor: 'primary.main' } }}
       />
